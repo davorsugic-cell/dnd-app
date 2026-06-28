@@ -648,6 +648,7 @@
       <input type="file" id="importFile" accept=".xlsx,.xls">
     </label>
     <button class="ghost" id="exportBtn">Izvezi u Excel</button>
+    <button class="secondary" id="printSelectedBtn" style="display:none;">🖨 Štampaj označene (<span id="selectedCount">0</span>)</button>
     <button class="primary" id="addBtn">+ Novi zaposleni</button>
   </div>
 
@@ -657,6 +658,7 @@
     <table>
       <thead>
         <tr>
+          <th style="width:36px;"><input type="checkbox" id="checkAll" title="Označi sve" style="cursor:pointer;"></th>
           <th>Broj</th>
           <th>Ime i prezime</th>
           <th>Restoran</th>
@@ -1401,7 +1403,7 @@
 <script>
 // ── Supabase konfiguracija ────────────────────────────────────────────────────
 const SUPABASE_URL = 'https://qyucalgapguivrgnogbr.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_5KFEmCR1XVR6OMSA0IPBVQ_4KbxKVIZ';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF5dWNhbGdhcGd1aXZyZ25vZ2JyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3MjY3OTMsImV4cCI6MjA5NzMwMjc5M30.9i2TeockxwwzXRWEPHw7UfrQfdkgbLUeC2NAIDcE9S0';
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ── Date input mask: auto-format dd.mm.gggg dok korisnik kuca ────────────────
@@ -1441,7 +1443,7 @@ window.storage = window.storage || {
   get: async (key) => {
     if (key === 'employees') {
       const { data, error } = await _supabase.from('employees').select('*').order('redni_broj');
-      if (error) { console.error('Supabase get error:', error); return null; }
+      if (error) { console.error('Supabase get error:', error && error.message); return null; }
       // Mapiranje kolona baze na originalne ključeve
       const mapped = data.map(r => ({
         Redni_broj: String(r.redni_broj || ''),
@@ -1814,7 +1816,7 @@ function toast(msg) {
 // ══ SUPABASE helpers ══════════════════════════════════════════════════════════
 async function sbGet(table) {
   const { data, error } = await _supabase.from(table).select('*');
-  if (error) { console.error(table, error); return null; }
+  if (error) { console.error(table + ' error:', error.message || JSON.stringify(error)); return null; }
   return data;
 }
 async function sbUpsert(table, data) {
@@ -1837,19 +1839,46 @@ async function sbInsert(table, data) {
 
 // ══ LOAD ══════════════════════════════════════════════════════════════════════
 async function loadData() {
-  // Employees
+  // Employees - koristimo direktni column mapping (isti kao window.storage shim)
   try {
     const { data, error } = await _supabase.from('employees').select('*').order('redni_broj');
     if (!error && data && data.length) {
-      employees = data.map(row => {
-        const e = row.data || {};
-        e._db_id = row.id;
-        return e;
-      });
+      employees = data.map(r => ({
+        _db_id: r.id,
+        Redni_broj: String(r.redni_broj || ''),
+        Ime: r.ime || '', Prezime: r.prezime || '',
+        Ime_i_prezime: r.ime_i_prezime || '',
+        Ime_roditelja: r.ime_roditelja || '',
+        Datum_rodjenja: r.datum_rodjenja || '',
+        JMBG: r.jmbg || '', Adresa: r.adresa || '',
+        Mjesto_stanovanja: r.mjesto_stanovanja || '',
+        Strucna_sprema: r.strucna_sprema || '',
+        Zavrsena_skola: r.zavrsena_skola || '',
+        Strucni_naziv: r.strucni_naziv || '',
+        Radno_mjesto: r.radno_mjesto || '',
+        Odjel: r.odjel || '', Restoran: r.restoran || '',
+        Naziv_poslodavca: r.naziv_poslodavca || '',
+        Adresa_poslodavca: r.adresa_poslodavca || '',
+        JIB_poslodavca: r.jib_poslodavca || '',
+        Zastupnik_poslodavca: r.zastupnik_poslodavca || '',
+        Tip_ugovora: r.tip_ugovora || '',
+        Datum_stupanja_na_rad: r.datum_stupanja_na_rad || '',
+        Datum_prestanka_ugovora: r.datum_prestanka_ugovora || '',
+        Radno_vrijeme: r.radno_vrijeme || '',
+        Neto_plata: r.neto_plata || '',
+        Bruto_plata: r.bruto_plata || '',
+        Mjesto_zakljucenja: r.mjesto_zakljucenja || '',
+        Datum_zakljucenja: r.datum_zakljucenja || '',
+        GO_broj_dana: r.go_broj_dana || '',
+        GO_prvi_dio_dana: r.go_prvi_dio_dana || '',
+        GO_datum_od: r.go_datum_od || '',
+        GO_datum_do: r.go_datum_do || '',
+        GO_datum_javljanja: r.go_datum_javljanja || '',
+      }));
     } else {
       employees = [];
     }
-  } catch(e) { employees = []; }
+  } catch(e) { console.error('loadData employees:', e && e.message); employees = []; }
 
   // Codes (šifarnici)
   try {
@@ -1975,11 +2004,20 @@ async function loadUsers() {
         moduli: r.moduli || defaultModuli(),
       }));
     } else {
-      users = JSON.parse(JSON.stringify(USERS_SEED));
-      await saveUsers(); // seed u bazu
+      // Pokušaj localStorage pa seed
+      const local = localStorage.getItem('users');
+      users = local ? JSON.parse(local) : JSON.parse(JSON.stringify(USERS_SEED));
+      await saveUsers();
     }
   } catch(e) {
-    users = JSON.parse(JSON.stringify(USERS_SEED));
+    console.error('loadUsers error:', e && e.message);
+    // Fallback na localStorage
+    try {
+      const local = localStorage.getItem('users');
+      users = local ? JSON.parse(local) : JSON.parse(JSON.stringify(USERS_SEED));
+    } catch(e2) {
+      users = JSON.parse(JSON.stringify(USERS_SEED));
+    }
   }
   users.forEach(u => {
     if (!u.permissions) u.permissions = defaultPermissions('puno');
@@ -1990,6 +2028,8 @@ async function loadUsers() {
 
 // ══ SAVE ══════════════════════════════════════════════════════════════════════
 async function saveUsers() {
+  // Backup u localStorage uvijek
+  try { localStorage.setItem('users', JSON.stringify(users)); } catch(e) {}
   try {
     for (const u of users) {
       const row = { username: u.username, name: u.name, password: u.password, role: u.role,
@@ -2002,7 +2042,7 @@ async function saveUsers() {
         if (data && data[0]) u._db_id = data[0].id;
       }
     }
-  } catch(e) { console.error(e); toast('Greška pri snimanju korisnika.'); }
+  } catch(e) { console.error('saveUsers:', e && e.message); }
 }
 
 async function saveCodes() {
@@ -2221,7 +2261,7 @@ async function logAction(action, employeeName, details) {
   };
   try {
     await _supabase.from('audit_log').insert(entry);
-  } catch(e) { console.error('audit_log:', e); }
+  } catch(e) { console.error('audit_log:', e && e.message); }
   auditLog.unshift({ time: nowStr(), user: getUser(), action, employee: employeeName, details });
   if (auditLog.length > 200) auditLog = auditLog.slice(0, 200);
 }
@@ -2285,14 +2325,44 @@ async function saveData() {
 
 async function saveEmployee(emp) {
   try {
-    const row = { data: emp, redni_broj: parseInt(emp.Redni_broj) || 0 };
+    const row = {
+      redni_broj: parseInt(emp.Redni_broj) || 0,
+      ime: emp.Ime || '', prezime: emp.Prezime || '',
+      ime_i_prezime: emp.Ime_i_prezime || '',
+      ime_roditelja: emp.Ime_roditelja || '',
+      datum_rodjenja: emp.Datum_rodjenja || '',
+      jmbg: emp.JMBG || '', adresa: emp.Adresa || '',
+      mjesto_stanovanja: emp.Mjesto_stanovanja || '',
+      strucna_sprema: emp.Strucna_sprema || '',
+      zavrsena_skola: emp.Zavrsena_skola || '',
+      strucni_naziv: emp.Strucni_naziv || '',
+      radno_mjesto: emp.Radno_mjesto || '',
+      odjel: emp.Odjel || '', restoran: emp.Restoran || '',
+      naziv_poslodavca: emp.Naziv_poslodavca || '',
+      adresa_poslodavca: emp.Adresa_poslodavca || '',
+      jib_poslodavca: emp.JIB_poslodavca || '',
+      zastupnik_poslodavca: emp.Zastupnik_poslodavca || '',
+      tip_ugovora: emp.Tip_ugovora || '',
+      datum_stupanja_na_rad: emp.Datum_stupanja_na_rad || '',
+      datum_prestanka_ugovora: emp.Datum_prestanka_ugovora || '',
+      radno_vrijeme: emp.Radno_vrijeme || '',
+      neto_plata: emp.Neto_plata || '',
+      bruto_plata: emp.Bruto_plata || '',
+      mjesto_zakljucenja: emp.Mjesto_zakljucenja || '',
+      datum_zakljucenja: emp.Datum_zakljucenja || '',
+      go_broj_dana: emp.GO_broj_dana || '',
+      go_prvi_dio_dana: emp.GO_prvi_dio_dana || '',
+      go_datum_od: emp.GO_datum_od || '',
+      go_datum_do: emp.GO_datum_do || '',
+      go_datum_javljanja: emp.GO_datum_javljanja || '',
+    };
     if (emp._db_id) {
       await _supabase.from('employees').update(row).eq('id', emp._db_id);
     } else {
       const { data } = await _supabase.from('employees').insert(row).select();
       if (data && data[0]) emp._db_id = data[0].id;
     }
-  } catch(e) { console.error('saveEmployee:', e); toast('Greška pri snimanju.'); }
+  } catch(e) { console.error('saveEmployee:', e && e.message); toast('Greška pri snimanju.'); }
 }
 
 async function deleteEmployee(emp) {
@@ -2300,7 +2370,7 @@ async function deleteEmployee(emp) {
     if (emp._db_id) {
       await _supabase.from('employees').delete().eq('id', emp._db_id);
     }
-  } catch(e) { console.error('deleteEmployee:', e); toast('Greška pri brisanju.'); }
+  } catch(e) { console.error('deleteEmployee:', e && e.message); toast('Greška pri brisanju.'); }
 }
 
 const TIP_UGOVORA_NASLOV = {
@@ -2653,13 +2723,80 @@ function closeModal() {
 }
 
 $('addBtn').addEventListener('click', () => { cameFromCard = false; openModal(null); });
-$('cancelBtn').addEventListener('click', closeModal);
+
+// ── Checkbox za štampu ────────────────────────────────────────────────────────
+let selectedForPrint = new Set();
+
+function updatePrintSelection() {
+  selectedForPrint.clear();
+  document.querySelectorAll('#tbody input[type=checkbox]:checked').forEach(cb => {
+    selectedForPrint.add(parseInt(cb.dataset.empIdx));
+  });
+  const count = selectedForPrint.size;
+  const btn = $('printSelectedBtn');
+  const countSpan = $('selectedCount');
+  if (btn) btn.style.display = count > 0 ? '' : 'none';
+  if (countSpan) countSpan.textContent = String(count);
+  // Sync checkAll
+  const allCbs = document.querySelectorAll('#tbody input[type=checkbox]');
+  const checkAll = $('checkAll');
+  if (checkAll) {
+    checkAll.checked = allCbs.length > 0 && count === allCbs.length;
+    checkAll.indeterminate = count > 0 && count < allCbs.length;
+  }
+}
+
+$('checkAll').addEventListener('change', function() {
+  document.querySelectorAll('#tbody input[type=checkbox]').forEach(cb => {
+    cb.checked = this.checked;
+  });
+  updatePrintSelection();
+});
+
+$('printSelectedBtn').addEventListener('click', () => {
+  if (selectedForPrint.size === 0) return;
+  const selected = [...selectedForPrint].map(i => employees[i]).filter(Boolean);
+  const rows = selected.map(emp => {
+    return '<div class="card">' +
+      '<h2>Kartica zaposlenog: ' + (emp.Ime_i_prezime || '') + '</h2>' +
+      '<table>' +
+      '<tr><td>Redni broj</td><td>' + (emp.Redni_broj || '') + '</td></tr>' +
+      '<tr><td>Ime i prezime</td><td>' + (emp.Ime_i_prezime || '') + '</td></tr>' +
+      '<tr><td>Datum rodjenja</td><td>' + (emp.Datum_rodjenja || '') + '</td></tr>' +
+      '<tr><td>JMBG</td><td>' + (emp.JMBG || '') + '</td></tr>' +
+      '<tr><td>Adresa</td><td>' + (emp.Adresa || '') + ', ' + (emp.Mjesto_stanovanja || '') + '</td></tr>' +
+      '<tr><td>Radno mjesto</td><td>' + (emp.Radno_mjesto || '') + '</td></tr>' +
+      '<tr><td>Odjel</td><td>' + (emp.Odjel || '') + '</td></tr>' +
+      '<tr><td>Poslovnica</td><td>' + (emp.Restoran || '') + '</td></tr>' +
+      '<tr><td>Tip ugovora</td><td>' + (emp.Tip_ugovora || '') + '</td></tr>' +
+      '<tr><td>Datum stupanja</td><td>' + (emp.Datum_stupanja_na_rad || '') + '</td></tr>' +
+      '<tr><td>Datum prestanka</td><td>' + (emp.Datum_prestanka_ugovora || '') + '</td></tr>' +
+      '<tr><td>Radno vrijeme</td><td>' + (emp.Radno_vrijeme || '') + 'h</td></tr>' +
+      '<tr><td>Neto plata</td><td>' + (emp.Neto_plata || '') + ' KM</td></tr>' +
+      '</table></div>';
+  }).join('');
+  const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Kartice zaposlenih</title>' +
+    '<style>body{font-family:Arial,sans-serif;font-size:11px;margin:0;}' +
+    '.card{page-break-after:always;padding:20px;border:1px solid #ccc;margin-bottom:20px;}' +
+    '.card:last-child{page-break-after:auto;}' +
+    'h2{font-size:14px;color:#16243D;margin:0 0 12px;}' +
+    'table{width:100%;border-collapse:collapse;}' +
+    'td{padding:4px 8px;border-bottom:1px solid #eee;}' +
+    'td:first-child{font-weight:bold;width:40%;color:#555;}' +
+    '</style></head><body>' + rows + '</body></html>';
+  const w = window.open('', '_blank');
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+  setTimeout(function() { w.print(); }, 500);
+});$('cancelBtn').addEventListener('click', closeModal);
 $('overlay').addEventListener('click', (e) => { if (e.target.id === 'overlay') closeModal(); });
 $('f_Restoran').addEventListener('change', fillPoslodavac);
 $('f_Tip_ugovora').addEventListener('change', autoRadnoVrijeme);
 
 $('deleteBtn').addEventListener('click', async () => {
   if (editingIndex === null) return;
+  if (!isAdmin && !isGlavniAdmin()) { toast('Nemate pravo brisanja zaposlenih.'); return; }
   if (!confirm('Da li sigurno želiš obrisati ovog zaposlenog?')) return;
   const emp = employees[editingIndex];
   await deleteEmployee(emp);
