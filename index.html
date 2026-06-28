@@ -2414,13 +2414,17 @@ function computeDerived(emp) {
 }
 
 function renumber() {
-  // Redni broj kreće od 1 per firma (po Restoran/poslovnici)
-  const firmaCount = {};
+  // Redni broj po firmi — poslovnica se mapira na firmu
+  // Npr. APPETITO i TRADICIJA su ista firma → dijele isti brojač
+  const counts = {};
   employees.forEach(e => {
-    const key = e.firma_id || e.Restoran || 'default';
-    if (!firmaCount[key]) firmaCount[key] = 0;
-    firmaCount[key]++;
-    e.Redni_broj = String(firmaCount[key]);
+    // Nađi firmu kroz poslovnicu
+    const restoran = (e.Restoran || '').trim();
+    const posl = poslovnice.find(p => p.naziv.toUpperCase() === restoran.toUpperCase());
+    const firmaId = posl ? posl.firma_id : (restoran || 'default');
+    if (!counts[firmaId]) counts[firmaId] = 0;
+    counts[firmaId]++;
+    e.Redni_broj = String(counts[firmaId]);
   });
 }
 
@@ -2699,7 +2703,7 @@ function openModal(index) {
     $('f_Mjesto_stanovanja').value = 'Banja Luka';
   } else {
     $('modalTitle').textContent = 'Izmjena podataka';
-    $('deleteBtn').style.display = canDelete('zaposleni') ? '' : 'none';
+    $('deleteBtn').style.display = isAdmin ? '' : 'none';
     const emp = employees[index];
     FIELD_ORDER.forEach(name => {
       const el = $('f_' + name);
@@ -2842,7 +2846,7 @@ $('empForm').addEventListener('submit', async (e) => {
     savedIndex = employees.indexOf(emp);
     editingIndex = savedIndex;
     $('modalTitle').textContent = 'Izmjena podataka';
-    $('deleteBtn').style.display = canDelete('zaposleni') ? '' : 'none';
+    $('deleteBtn').style.display = isAdmin ? '' : 'none';
   } else {
     const oldEmp = employees[editingIndex];
     const changes = diffEmployee(oldEmp, emp);
