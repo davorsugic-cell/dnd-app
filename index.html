@@ -2349,9 +2349,11 @@ function nextId(arr) {
 }
 
 function getFirmaForPoslovnica(naziv) {
+  // Prvo provjeri u poslovnicama
   const p = poslovnice.find(x => x.naziv === naziv);
-  if (!p) return null;
-  return firme.find(f => f.id === p.firma_id) || null;
+  if (p) return firme.find(f => f.id === p.firma_id) || null;
+  // Ako nije u poslovnicama, provjeri da li je naziv direktno naziv firme
+  return firme.find(f => f.naziv === naziv) || null;
 }
 
 // Određuje firmu poslodavca za formu: prvo po izabranoj poslovnici, a ako firma
@@ -2377,7 +2379,13 @@ function accessiblePoslovnicaNazivi() {
     const p = poslovnice.find(x => x.id === u.poslovnica_id);
     return p ? [p.naziv] : [];
   }
-  return poslovnice.filter(p => p.firma_id === u.firma_id).map(p => p.naziv);
+  const firmaPoslovnice = poslovnice.filter(p => p.firma_id === u.firma_id);
+  if (firmaPoslovnice.length > 0) {
+    return firmaPoslovnice.map(p => p.naziv);
+  }
+  // Firma nema poslovnica — zaposleni su pod nazivom firme
+  const firma = firme.find(f => f.id === u.firma_id);
+  return firma ? [firma.naziv] : [];
 }
 
 // Returns array of firma ids the current user can see, or null = sve (glavni administrator)
@@ -2485,14 +2493,19 @@ function populateSelect(selectEl, list, currentValue, allowEmpty) {
 
 function populateFormSelects(emp) {
   emp = emp || {};
+  const u = currentSessionUser;
   const allowed = accessiblePoslovnicaNazivi();
   const opts = allowed === null ? poslovnice : poslovnice.filter(p => allowed.includes(p.naziv));
-  const poslovnicaNazivi = opts.map(p => p.naziv);
+  let poslovnicaNazivi = opts.map(p => p.naziv);
+
+  // Ako firma nema poslovnica, koristi naziv firme
+  if (poslovnicaNazivi.length === 0 && u && u.firma_id != null) {
+    const firma = firme.find(f => f.id === u.firma_id);
+    if (firma) poslovnicaNazivi = [firma.naziv];
+  }
+
   const defaultPoslovnica = emp.Restoran || poslovnicaNazivi[0] || '';
   populateSelect($('f_Restoran'), poslovnicaNazivi, defaultPoslovnica, false);
-
-  // Uvijek prikaži polje - korisnik treba znati u kojoj firmi/poslovnici dodaje zaposlenog
-  // Ako ima samo jednu poslovnicu, select je disabled (samo info)
   $('f_RestoranWrap').style.display = '';
   $('f_Restoran').disabled = poslovnicaNazivi.length <= 1;
 
@@ -3521,7 +3534,12 @@ function renderUsersModal() {
 
   const body = $('usersBody');
   body.innerHTML = '';
-  users.forEach((u, i) => {
+  // Super admin vidi sve, firma admin vidi samo korisnike svoje firme
+  const vidljiviUsers = isGlavniAdmin()
+    ? users
+    : users.filter(u => u.firma_id === currentSessionUser.firma_id || u.username === currentSessionUser.username);
+  vidljiviUsers.forEach((u, i) => {
+    const realI = users.indexOf(u);
     const row = document.createElement('div');
     row.className = 'section';
     row.style.display = 'flex';
@@ -3558,9 +3576,11 @@ function renderUsersModal() {
       poslovnicaSel.disabled = !selectedFirmaId;
     }
 
-    firmaSel.innerHTML = '<option value="">Sve firme (glavni administrator)</option>' +
-      firme.map(f2 => `<option value="${f2.id}">${f2.naziv}</option>`).join('');
+    const dostupneFirme = isGlavniAdmin() ? firme : firme.filter(f2 => f2.id === currentSessionUser.firma_id);
+    firmaSel.innerHTML = (isGlavniAdmin() ? '<option value="">Sve firme (glavni administrator)</option>' : '') +
+      dostupneFirme.map(f2 => `<option value="${f2.id}">${f2.naziv}</option>`).join('');
     firmaSel.value = u.firma_id != null ? String(u.firma_id) : '';
+    firmaSel.disabled = !isGlavniAdmin(); // Firma admin ne može mijenjati firmu
     refreshPoslovnicaOptions(u.firma_id, u.poslovnica_id);
 
     async function applyAccessChange() {
@@ -3634,7 +3654,7 @@ function renderUsersModal() {
     delBtn.disabled = onlyAdmin;
     delBtn.addEventListener('click', async () => {
       if (!confirm(`Obrisati korisnika "${u.username}"?`)) return;
-      users.splice(i, 1);
+      users.splice(realI, 1);
       await saveUsers();
       await logAction('Korisnici', '', `Obrisan korisnik "${u.username}"`);
       renderUsersModal();
