@@ -751,7 +751,7 @@
 
 <!-- Radno vrijeme / Raspored Modal -->
 <div class="overlay" id="rasporedOverlay" style="z-index:400;">
-  <div class="modal" style="max-width:600px;">
+  <div class="modal" style="max-width:min(95vw, 700px); width:100%;">
     <div class="modal-header">
       <h2>Radno vrijeme — <span id="rasporedRmNaziv"></span></h2>
       <button type="button" class="ghost small" id="rasporedCloseBtn">Zatvori</button>
@@ -1404,6 +1404,38 @@ const SUPABASE_URL = 'https://qyucalgapguivrgnogbr.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_5KFEmCR1XVR6OMSA0IPBVQ_4KbxKVIZ';
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// ── Date input mask: auto-format dd.mm.gggg dok korisnik kuca ────────────────
+function applyDateMask(input) {
+  input.setAttribute('maxlength', '10');
+  input.setAttribute('inputmode', 'numeric');
+  input.addEventListener('input', function(e) {
+    let v = this.value.replace(/\D/g, ''); // samo cifre
+    if (v.length > 8) v = v.slice(0, 8);
+    let out = '';
+    if (v.length > 4) out = v.slice(0,2) + '.' + v.slice(2,4) + '.' + v.slice(4);
+    else if (v.length > 2) out = v.slice(0,2) + '.' + v.slice(2);
+    else out = v;
+    this.value = out;
+  });
+  input.addEventListener('blur', function() {
+    // Validacija i normalizacija pri izlasku
+    const parts = this.value.split('.');
+    if (parts.length === 3) {
+      const d = parts[0].padStart(2,'0');
+      const m = parts[1].padStart(2,'0');
+      const g = parts[2];
+      if (d && m && g.length === 4) this.value = `${d}.${m}.${g}`;
+    }
+  });
+}
+
+// Primijeni mask na sve datumske inpute u formi zaposlenog
+function applyAllDateMasks() {
+  ['f_Datum_rodjenja','f_Datum_stupanja_na_rad','f_Datum_prestanka_ugovora',
+   'f_Datum_zakljucenja','ods_datum_od','ods_datum_do','go_datum_od','go_datum_do']
+    .forEach(id => { const el = document.getElementById(id); if (el) applyDateMask(el); });
+}
+
 // ── Storage shim: koristi Supabase za employees, localStorage za ostalo ───────
 window.storage = window.storage || {
   get: async (key) => {
@@ -1779,198 +1811,314 @@ function toast(msg) {
   setTimeout(() => el.classList.remove('show'), 2800);
 }
 
+// ══ SUPABASE helpers ══════════════════════════════════════════════════════════
+async function sbGet(table) {
+  const { data, error } = await _supabase.from(table).select('*');
+  if (error) { console.error(table, error); return null; }
+  return data;
+}
+async function sbUpsert(table, data) {
+  const { error } = await _supabase.from(table).upsert(data, { onConflict: 'id' });
+  if (error) throw error;
+}
+async function sbDelete(table, id) {
+  const { error } = await _supabase.from(table).delete().eq('id', id);
+  if (error) throw error;
+}
+async function sbDeleteWhere(table, col, val) {
+  const { error } = await _supabase.from(table).delete().eq(col, val);
+  if (error) throw error;
+}
+async function sbInsert(table, data) {
+  const { data: res, error } = await _supabase.from(table).insert(data).select();
+  if (error) throw error;
+  return res;
+}
+
+// ══ LOAD ══════════════════════════════════════════════════════════════════════
 async function loadData() {
+  // Employees
   try {
-    const res = await window.storage.get('employees');
-    employees = res && res.value ? JSON.parse(res.value) : SEED_DATA.slice();
-  } catch (e) {
-    employees = SEED_DATA.slice();
-  }
-  if (!Array.isArray(employees)) employees = SEED_DATA.slice();
-
-  try {
-    const res = await window.storage.get('codes');
-    codes = res && res.value ? JSON.parse(res.value) : null;
-  } catch (e) {
-    codes = null;
-  }
-  if (!codes || typeof codes !== 'object') codes = JSON.parse(JSON.stringify(CODES_SEED));
-  // Migracija: ako su stari podaci string array, konvertuj u {id, naziv}
-  Object.keys(CODES_SEED).forEach(k => {
-    if (!Array.isArray(codes[k])) { codes[k] = CODES_SEED[k].slice(); return; }
-    if (codes[k].length > 0 && typeof codes[k][0] === 'string') {
-      // Stari format - konvertuj: string postaje i id i naziv
-      codes[k] = codes[k].map(v => ({ id: v, naziv: v }));
+    const { data, error } = await _supabase.from('employees').select('*').order('redni_broj');
+    if (!error && data && data.length) {
+      employees = data.map(row => {
+        const e = row.data || {};
+        e._db_id = row.id;
+        return e;
+      });
+    } else {
+      employees = [];
     }
-  });
+  } catch(e) { employees = []; }
+
+  // Codes (šifarnici)
+  try {
+    const rows = await sbGet('codes');
+    if (rows && rows.length) {
+      codes = {};
+      rows.forEach(r => {
+        if (!codes[r.kategorija]) codes[r.kategorija] = [];
+        codes[r.kategorija].push({ id: r.code_id, naziv: r.naziv, _db_id: r.id });
+      });
+      // Osiguraj da sve kategorije postoje
+      Object.keys(CODES_SEED).forEach(k => { if (!codes[k]) codes[k] = []; });
+    } else {
+      codes = JSON.parse(JSON.stringify(CODES_SEED));
+      await saveCodes(); // seed u bazu
+    }
+  } catch(e) { codes = JSON.parse(JSON.stringify(CODES_SEED)); }
+
+  // Firme
+  try {
+    const rows = await sbGet('firme');
+    firme = (rows && rows.length) ? rows : null;
+    if (!firme || !firme.length) { firme = JSON.parse(JSON.stringify(FIRME_SEED)); await saveFirme(); }
+  } catch(e) { firme = JSON.parse(JSON.stringify(FIRME_SEED)); }
+
+  // Poslovnice
+  try {
+    const rows = await sbGet('poslovnice');
+    poslovnice = (rows && rows.length) ? rows : null;
+    if (!poslovnice || !poslovnice.length) { poslovnice = JSON.parse(JSON.stringify(POSLOVNICE_SEED)); await savePoslovnice(); }
+  } catch(e) { poslovnice = JSON.parse(JSON.stringify(POSLOVNICE_SEED)); }
+
+  // Praznici
+  try {
+    const rows = await sbGet('praznici');
+    praznici = (rows && rows.length) ? rows : null;
+    if (!praznici || !praznici.length) { praznici = JSON.parse(JSON.stringify(PRAZNICI_SEED)); await savePraznici(); }
+  } catch(e) { praznici = JSON.parse(JSON.stringify(PRAZNICI_SEED)); }
+
+  // Komitenti
+  try {
+    const rows = await sbGet('komitenti');
+    komitenti = rows || [];
+  } catch(e) { komitenti = []; }
+
+  // GO koristenja
+  try {
+    const rows = await sbGet('go_koristenja');
+    goKoristenja = rows || [];
+  } catch(e) { goKoristenja = []; }
+
+  // GO settings
+  try {
+    const rows = await sbGet('go_settings');
+    if (rows && rows.length) {
+      const r = rows[0];
+      goSettings = { osnovniDani: r.osnovni_dani, dodatniDaniNaGodine: r.dodatni_dani, godinaPrag: r.godina_prag, _db_id: r.id };
+    } else {
+      goSettings = JSON.parse(JSON.stringify(GO_SETTINGS_DEFAULT));
+    }
+  } catch(e) { goSettings = JSON.parse(JSON.stringify(GO_SETTINGS_DEFAULT)); }
+
+  // Radni raspored
+  try {
+    const rows = await sbGet('radni_raspored');
+    if (rows && rows.length) {
+      radniRaspored = rows.map(r => ({
+        _db_id: r.id,
+        radno_mjesto: r.radno_mjesto,
+        firma_id: r.firma_id,
+        smjena1: r.smjena1 || { od:'', do:'' },
+        smjena2: r.smjena2 || { od:'', do:'' },
+        medju:   r.medju   || { od:'', do:'' },
+        slobodnih_dana: r.slobodnih_dana ?? 2,
+        izuzeci: r.izuzeci || [],
+      }));
+    } else {
+      radniRaspored = [];
+    }
+  } catch(e) { radniRaspored = []; }
+
+  // Odsustva i sihterica overrides ostaju localStorage (privremeni podaci)
+  try {
+    const res = localStorage.getItem('odsustva');
+    odsustva = res ? JSON.parse(res) : [];
+  } catch(e) { odsustva = []; }
+  if (!Array.isArray(odsustva)) odsustva = [];
 
   try {
-    const res = await window.storage.get('audit_log');
-    auditLog = res && res.value ? JSON.parse(res.value) : [];
-  } catch (e) {
-    auditLog = [];
-  }
-  if (!Array.isArray(auditLog)) auditLog = [];
-
-  try {
-    const res = await window.storage.get('firme');
-    firme = res && res.value ? JSON.parse(res.value) : null;
-  } catch (e) {
-    firme = null;
-  }
-  if (!Array.isArray(firme) || !firme.length) firme = JSON.parse(JSON.stringify(FIRME_SEED));
-
-  try {
-    const res = await window.storage.get('poslovnice');
-    poslovnice = res && res.value ? JSON.parse(res.value) : null;
-  } catch (e) {
-    poslovnice = null;
-  }
-  if (!Array.isArray(poslovnice) || !poslovnice.length) poslovnice = JSON.parse(JSON.stringify(POSLOVNICE_SEED));
-
-  try {
-    const res = await window.storage.get('komitenti');
-    komitenti = res && res.value ? JSON.parse(res.value) : null;
-  } catch (e) {
-    komitenti = null;
-  }
-  if (!Array.isArray(komitenti)) komitenti = JSON.parse(JSON.stringify(KOMITENTI_SEED));
-
-  try {
-    const res = await window.storage.get('go_koristenja');
-    goKoristenja = res && res.value ? JSON.parse(res.value) : null;
-  } catch (e) {
-    goKoristenja = null;
-  }
-  if (!Array.isArray(goKoristenja)) goKoristenja = [];
-
-  try {
-    const res = await window.storage.get('go_settings');
-    goSettings = res && res.value ? JSON.parse(res.value) : null;
-  } catch (e) {
-    goSettings = null;
-  }
-  if (!goSettings || typeof goSettings !== 'object') goSettings = JSON.parse(JSON.stringify(GO_SETTINGS_DEFAULT));
-
-  try {
-    const res = await window.storage.get('praznici');
-    praznici = res && res.value ? JSON.parse(res.value) : null;
-  } catch (e) {
-    praznici = null;
-  }
-  if (!Array.isArray(praznici) || !praznici.length) praznici = JSON.parse(JSON.stringify(PRAZNICI_SEED));
-
-  try {
-    const res = await window.storage.get('prethodni_staz');
-    prethodniStaz = res && res.value ? JSON.parse(res.value) : null;
-  } catch (e) {
-    prethodniStaz = null;
-  }
-  if (!Array.isArray(prethodniStaz)) prethodniStaz = [];
-
-  try {
-    const res = await window.storage.get('radni_raspored');
-    radniRaspored = res && res.value ? JSON.parse(res.value) : null;
-  } catch (e) {
-    radniRaspored = null;
-  }
-  if (!Array.isArray(radniRaspored)) radniRaspored = JSON.parse(JSON.stringify(RADNI_RASPORED_SEED));
-
-  try {
-    const res = await window.storage.get('odsustva');
-    odsustva = res && res.value ? JSON.parse(res.value) : null;
-  } catch (e) {
-    odsustva = null;
-  }
-  if (!Array.isArray(odsustva)) odsustva = JSON.parse(JSON.stringify(ODSUSTVA_SEED));
-
-  try {
-    const res = await window.storage.get('sihterica_overrides');
-    sihtericaOverrides = res && res.value ? JSON.parse(res.value) : null;
-  } catch (e) {
-    sihtericaOverrides = null;
-  }
+    const res = localStorage.getItem('sihterica_overrides');
+    sihtericaOverrides = res ? JSON.parse(res) : [];
+  } catch(e) { sihtericaOverrides = []; }
   if (!Array.isArray(sihtericaOverrides)) sihtericaOverrides = [];
+
+  // Audit log
+  try {
+    const rows = await sbGet('audit_log');
+    auditLog = rows ? rows.map(r => ({ id: r.id, vrijeme: r.vrijeme, korisnik: r.korisnik, akcija: r.akcija, zaposleni: r.zaposleni, detalji: r.detalji })).reverse() : [];
+  } catch(e) { auditLog = []; }
+
+  // Artikli
+  try {
+    const rows = await sbGet('artikli');
+    artikli = rows ? rows.map(r => ({ id: r.code_id, naziv: r.naziv, _db_id: r.id, firma_id: r.firma_id })) : [];
+  } catch(e) { artikli = []; }
 
   render();
 }
 
 async function loadUsers() {
   try {
-    const res = await window.storage.get('users');
-    users = res && res.value ? JSON.parse(res.value) : null;
-  } catch (e) {
-    users = null;
+    const rows = await sbGet('users');
+    if (rows && rows.length) {
+      users = rows.map(r => ({
+        _db_id: r.id,
+        username: r.username,
+        name: r.name,
+        password: r.password,
+        role: r.role || 'korisnik',
+        firma_id: r.firma_id,
+        poslovnica_id: r.poslovnica_id,
+        permissions: r.permissions || defaultPermissions('puno'),
+        moduli: r.moduli || defaultModuli(),
+      }));
+    } else {
+      users = JSON.parse(JSON.stringify(USERS_SEED));
+      await saveUsers(); // seed u bazu
+    }
+  } catch(e) {
+    users = JSON.parse(JSON.stringify(USERS_SEED));
   }
-  if (!Array.isArray(users) || !users.length) users = JSON.parse(JSON.stringify(USERS_SEED));
-  // Migracija: postojeći korisnici sačuvani prije uvođenja nivoa pristupa po modulu
-  // dobijaju "puno" (zadržava se prethodno ponašanje gdje su svi korisnici sve mogli).
   users.forEach(u => {
     if (!u.permissions) u.permissions = defaultPermissions('puno');
-    // Migracija: stari 'administrator' bez firma_id → super_admin
     if (u.role === 'administrator' && u.firma_id == null && u.username === 'admin') u.role = 'super_admin';
     if (!u.moduli) u.moduli = (u.role === 'administrator' || u.role === 'super_admin') ? MODULI.slice() : defaultModuli();
   });
 }
 
+// ══ SAVE ══════════════════════════════════════════════════════════════════════
 async function saveUsers() {
-  try { await window.storage.set('users', JSON.stringify(users)); }
-  catch (e) { console.error(e); toast('Greška pri snimanju korisnika.'); }
+  try {
+    for (const u of users) {
+      const row = { username: u.username, name: u.name, password: u.password, role: u.role,
+        firma_id: u.firma_id || null, poslovnica_id: u.poslovnica_id || null,
+        permissions: u.permissions, moduli: u.moduli };
+      if (u._db_id) {
+        await _supabase.from('users').update(row).eq('id', u._db_id);
+      } else {
+        const { data } = await _supabase.from('users').insert(row).select();
+        if (data && data[0]) u._db_id = data[0].id;
+      }
+    }
+  } catch(e) { console.error(e); toast('Greška pri snimanju korisnika.'); }
 }
 
 async function saveCodes() {
-  try { await window.storage.set('codes', JSON.stringify(codes)); }
-  catch (e) { console.error(e); toast('Greška pri snimanju šifarnika.'); }
+  try {
+    // Briši sve pa re-insert (jednostavnije od diff-a)
+    await _supabase.from('codes').delete().neq('id', 0);
+    const rows = [];
+    Object.entries(codes).forEach(([kategorija, lista]) => {
+      (lista || []).forEach(item => {
+        const id = typeof item === 'string' ? item : item.id;
+        const naziv = typeof item === 'string' ? item : item.naziv;
+        rows.push({ kategorija, code_id: id, naziv });
+      });
+    });
+    if (rows.length) await _supabase.from('codes').insert(rows);
+  } catch(e) { console.error(e); toast('Greška pri snimanju šifarnika.'); }
 }
 
 async function saveFirme() {
-  try { await window.storage.set('firme', JSON.stringify(firme)); }
-  catch (e) { console.error(e); toast('Greška pri snimanju firmi.'); }
+  try {
+    for (const f of firme) {
+      await _supabase.from('firme').upsert({ id: f.id, naziv: f.naziv, naziv_pravni: f.naziv_pravni,
+        adresa: f.adresa, jib: f.jib, pib: f.pib || '', zastupnik: f.zastupnik });
+    }
+  } catch(e) { console.error(e); toast('Greška pri snimanju firmi.'); }
 }
 
 async function savePoslovnice() {
-  try { await window.storage.set('poslovnice', JSON.stringify(poslovnice)); }
-  catch (e) { console.error(e); toast('Greška pri snimanju poslovnica.'); }
+  try {
+    await _supabase.from('poslovnice').delete().neq('id', 0);
+    for (const p of poslovnice) {
+      await _supabase.from('poslovnice').upsert({ id: p.id, firma_id: p.firma_id, naziv: p.naziv });
+    }
+  } catch(e) { console.error(e); toast('Greška pri snimanju poslovnica.'); }
 }
 
 async function saveKomitenti() {
-  try { await window.storage.set('komitenti', JSON.stringify(komitenti)); }
-  catch (e) { console.error(e); toast('Greška pri snimanju komitenata.'); }
+  try {
+    for (const k of komitenti) {
+      const row = { firma_id: k.firma_id, naziv: k.naziv, adresa: k.adresa || '', jib: k.jib || '', kontakt: k.kontakt || '' };
+      if (k._db_id) {
+        await _supabase.from('komitenti').update(row).eq('id', k._db_id);
+      } else {
+        const { data } = await _supabase.from('komitenti').insert(row).select();
+        if (data && data[0]) k._db_id = data[0].id;
+      }
+    }
+  } catch(e) { console.error(e); toast('Greška pri snimanju komitenata.'); }
 }
 
 async function saveGoKoristenja() {
-  try { await window.storage.set('go_koristenja', JSON.stringify(goKoristenja)); }
-  catch (e) { console.error(e); toast('Greška pri snimanju evidencije godišnjih odmora.'); }
+  try {
+    for (const g of goKoristenja) {
+      const row = { firma_id: g.firma_id || null, emp_index: g.emp_index, godina: g.godina, koristenja: g.koristenja };
+      if (g._db_id) {
+        await _supabase.from('go_koristenja').update(row).eq('id', g._db_id);
+      } else {
+        const { data } = await _supabase.from('go_koristenja').insert(row).select();
+        if (data && data[0]) g._db_id = data[0].id;
+      }
+    }
+  } catch(e) { console.error(e); toast('Greška pri snimanju GO korištenja.'); }
 }
 
 async function saveGoSettings() {
-  try { await window.storage.set('go_settings', JSON.stringify(goSettings)); }
-  catch (e) { console.error(e); toast('Greška pri snimanju podešavanja.'); }
+  try {
+    const row = { osnov_dani: goSettings.osnovniDani, dodatni_dani: goSettings.dodatniDaniNaGodine, godina_prag: goSettings.godinaPrag };
+    if (goSettings._db_id) {
+      await _supabase.from('go_settings').update({ osnovni_dani: goSettings.osnovniDani, dodatni_dani: goSettings.dodatniDaniNaGodine, godina_prag: goSettings.godinaPrag }).eq('id', goSettings._db_id);
+    } else {
+      const { data } = await _supabase.from('go_settings').insert({ osnovni_dani: goSettings.osnovniDani, dodatni_dani: goSettings.dodatniDaniNaGodine, godina_prag: goSettings.godinaPrag }).select();
+      if (data && data[0]) goSettings._db_id = data[0].id;
+    }
+  } catch(e) { console.error(e); toast('Greška pri snimanju podešavanja GO.'); }
 }
 
 async function savePraznici() {
-  try { await window.storage.set('praznici', JSON.stringify(praznici)); }
-  catch (e) { console.error(e); toast('Greška pri snimanju šifarnika praznika.'); }
+  try {
+    await _supabase.from('praznici').delete().neq('id', 0);
+    if (praznici.length) {
+      const rows = praznici.map(p => ({ firma_id: p.firma_id, datum: p.datum, naziv: p.naziv, radan: !!p.radan, godina: p.godina || null }));
+      const { data } = await _supabase.from('praznici').insert(rows).select();
+      if (data) data.forEach((r, i) => { if (praznici[i]) praznici[i]._db_id = r.id; praznici[i].id = r.id; });
+    }
+  } catch(e) { console.error(e); toast('Greška pri snimanju praznika.'); }
 }
 
 async function savePrethodniStaz() {
-  try { await window.storage.set('prethodni_staz', JSON.stringify(prethodniStaz)); }
-  catch (e) { console.error(e); toast('Greška pri snimanju prethodnog staža.'); }
+  try { localStorage.setItem('prethodni_staz', JSON.stringify(prethodniStaz)); }
+  catch(e) { console.error(e); }
 }
 
 async function saveRadniRaspored() {
-  try { await window.storage.set('radni_raspored', JSON.stringify(radniRaspored)); }
-  catch (e) { console.error(e); toast('Greška pri snimanju radnog rasporeda.'); }
+  try {
+    for (const r of radniRaspored) {
+      const row = { radno_mjesto: r.radno_mjesto, firma_id: r.firma_id || null,
+        smjena1: r.smjena1, smjena2: r.smjena2, medju: r.medju,
+        slobodnih_dana: r.slobodnih_dana ?? 2, izuzeci: r.izuzeci || [] };
+      if (r._db_id) {
+        await _supabase.from('radni_raspored').update(row).eq('id', r._db_id);
+      } else {
+        const { data } = await _supabase.from('radni_raspored').insert(row).select();
+        if (data && data[0]) r._db_id = data[0].id;
+      }
+    }
+  } catch(e) { console.error(e); toast('Greška pri snimanju rasporeda.'); }
 }
 
 async function saveOdsustva() {
-  try { await window.storage.set('odsustva', JSON.stringify(odsustva)); }
-  catch (e) { console.error(e); toast('Greška pri snimanju odsustava.'); }
+  try { localStorage.setItem('odsustva', JSON.stringify(odsustva)); }
+  catch(e) { console.error(e); }
 }
 
 async function saveSihtericaOverrides() {
-  try { await window.storage.set('sihterica_overrides', JSON.stringify(sihtericaOverrides)); }
-  catch (e) { console.error(e); toast('Greška pri snimanju šihterice.'); }
+  try { localStorage.setItem('sihterica_overrides', JSON.stringify(sihtericaOverrides)); }
+  catch(e) { console.error(e); }
 }
 
 function nextId(arr) {
@@ -2051,8 +2199,7 @@ function canDelete(module) {
 }
 
 async function saveAuditLog() {
-  try { await window.storage.set('audit_log', JSON.stringify(auditLog)); }
-  catch (e) { console.error(e); }
+  // Audit log se snima direktno u logAction, ovdje dummy
 }
 
 function getUser() {
@@ -2066,9 +2213,17 @@ function nowStr() {
 }
 
 async function logAction(action, employeeName, details) {
+  const entry = {
+    korisnik: getUser(),
+    akcija: action,
+    zaposleni: employeeName || '',
+    detalji: details || '',
+  };
+  try {
+    await _supabase.from('audit_log').insert(entry);
+  } catch(e) { console.error('audit_log:', e); }
   auditLog.unshift({ time: nowStr(), user: getUser(), action, employee: employeeName, details });
-  if (auditLog.length > 1000) auditLog = auditLog.slice(0, 1000);
-  await saveAuditLog();
+  if (auditLog.length > 200) auditLog = auditLog.slice(0, 200);
 }
 
 function diffEmployee(oldEmp, newEmp) {
@@ -2124,12 +2279,28 @@ function populateFormSelects(emp) {
 }
 
 async function saveData() {
+  // Employees se snimaju direktno u saveEmployee/deleteEmployee
+  // Ova funkcija je zadržana za kompatibilnost
+}
+
+async function saveEmployee(emp) {
   try {
-    await window.storage.set('employees', JSON.stringify(employees));
-  } catch (e) {
-    console.error('Greška pri snimanju:', e);
-    toast('Greška pri snimanju podataka.');
-  }
+    const row = { data: emp, redni_broj: parseInt(emp.Redni_broj) || 0 };
+    if (emp._db_id) {
+      await _supabase.from('employees').update(row).eq('id', emp._db_id);
+    } else {
+      const { data } = await _supabase.from('employees').insert(row).select();
+      if (data && data[0]) emp._db_id = data[0].id;
+    }
+  } catch(e) { console.error('saveEmployee:', e); toast('Greška pri snimanju.'); }
+}
+
+async function deleteEmployee(emp) {
+  try {
+    if (emp._db_id) {
+      await _supabase.from('employees').delete().eq('id', emp._db_id);
+    }
+  } catch(e) { console.error('deleteEmployee:', e); toast('Greška pri brisanju.'); }
 }
 
 const TIP_UGOVORA_NASLOV = {
@@ -2491,9 +2662,9 @@ $('deleteBtn').addEventListener('click', async () => {
   if (editingIndex === null) return;
   if (!confirm('Da li sigurno želiš obrisati ovog zaposlenog?')) return;
   const emp = employees[editingIndex];
+  await deleteEmployee(emp);
   employees.splice(editingIndex, 1);
   renumber();
-  await saveData();
   await logAction('Obrisan', emp.Ime_i_prezime, '');
   closeModal();
   render();
@@ -2529,7 +2700,7 @@ $('empForm').addEventListener('submit', async (e) => {
   if (editingIndex === null) {
     employees.push(emp);
     renumber();
-    await saveData();
+    await saveEmployee(emp);
     await logAction('Dodan', emp.Ime_i_prezime, 'Novi zaposleni unesen u bazu.');
     savedIndex = employees.indexOf(emp);
     editingIndex = savedIndex;
@@ -2540,7 +2711,7 @@ $('empForm').addEventListener('submit', async (e) => {
     const changes = diffEmployee(oldEmp, emp);
     employees[editingIndex] = emp;
     renumber();
-    await saveData();
+    await saveEmployee(emp);
     if (changes.length) {
       await logAction('Izmijenjen', emp.Ime_i_prezime, changes.join('; '));
     }
@@ -2659,7 +2830,7 @@ $('importFile').addEventListener('change', async (e) => {
   }
   employees = imported;
   renumber();
-  await saveData();
+  for (const e of employees) await saveEmployee(e);
   render();
   e.target.value = '';
   toast('Podaci uvezeni.');
@@ -5273,7 +5444,7 @@ function renderExpiryModal() {
       const old = employees[idx].Datum_prestanka_ugovora;
       if (!newVal || newVal === old) return;
       employees[idx].Datum_prestanka_ugovora = newVal;
-      await saveData();
+      await saveEmployee(employees[idx]);
       await logAction('Izmijenjen', emp.Ime_i_prezime, `${FIELD_LABELS.Datum_prestanka_ugovora}: "${old}" \u2192 "${newVal}"`);
       render();
       renderExpiryModal();
@@ -5328,7 +5499,7 @@ $('expiryApplyBtn').addEventListener('click', async () => {
         `${FIELD_LABELS.Datum_prestanka_ugovora}: "${old}" \u2192 "${newVal}" (masovna izmjena)`);
     }
   }
-  await saveData();
+  for (const e of employees) { if (e._updated) { await saveEmployee(e); delete e._updated; } }
   render();
   renderExpiryModal();
   toast('Datumi ažurirani.');
@@ -5554,7 +5725,16 @@ async function attemptLogin() {
 let aktivniModul = 'kadrovska';
 let artikli = JSON.parse(localStorage.getItem('troskovi_artikli') || '[]');
 
-function saveArtikli() { localStorage.setItem('troskovi_artikli', JSON.stringify(artikli)); }
+async function saveArtikli() {
+  try {
+    await _supabase.from('artikli').delete().neq('id', 0);
+    if (artikli.length) {
+      const rows = artikli.map(a => ({ firma_id: a.firma_id || null, code_id: a.id, naziv: a.naziv }));
+      const { data } = await _supabase.from('artikli').insert(rows).select();
+      if (data) data.forEach((r, i) => { if (artikli[i]) artikli[i]._db_id = r.id; });
+    }
+  } catch(e) { console.error(e); toast('Greška pri snimanju artikala.'); }
+}
 
 function switchModule(modul) {
   aktivniModul = modul;
