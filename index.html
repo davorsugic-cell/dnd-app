@@ -1744,7 +1744,7 @@ const MODULI_ICONS  = { kadrovska: '👥', obracun: '💰', troskovi: '📦' };
 function defaultModuli() { return ['kadrovska']; }
 
 const USERS_SEED = [
-  { username: 'admin',   name: 'Administrator', password: '1234',           role: 'administrator', firma_id: null, poslovnica_id: null, permissions: defaultPermissions('puno'), moduli: MODULI.slice() },
+  { username: 'admin',   name: 'Administrator', password: '1234',           role: 'super_admin',   firma_id: null, poslovnica_id: null, permissions: defaultPermissions('puno'), moduli: MODULI.slice() },
   { username: 'korisnik',name: 'Korisnik',       password: 'appetito123',    role: 'korisnik',      firma_id: 1,    poslovnica_id: null, permissions: defaultPermissions('puno'), moduli: defaultModuli() },
   { username: 'minja',   name: 'Minja',          password: 'NDmDFsCf7pUAfB', role: 'korisnik',      firma_id: 1,    poslovnica_id: 2,    permissions: defaultPermissions('puno'), moduli: defaultModuli() },
   { username: 'test',    name: 'Test korisnik',  password: '123',            role: 'korisnik',      firma_id: 2,    poslovnica_id: 3,    permissions: defaultPermissions('puno'), moduli: MODULI.slice() }
@@ -1907,7 +1907,9 @@ async function loadUsers() {
   // dobijaju "puno" (zadržava se prethodno ponašanje gdje su svi korisnici sve mogli).
   users.forEach(u => {
     if (!u.permissions) u.permissions = defaultPermissions('puno');
-    if (!u.moduli) u.moduli = u.role === 'administrator' ? MODULI.slice() : defaultModuli();
+    // Migracija: stari 'administrator' bez firma_id → super_admin
+    if (u.role === 'administrator' && u.firma_id == null && u.username === 'admin') u.role = 'super_admin';
+    if (!u.moduli) u.moduli = (u.role === 'administrator' || u.role === 'super_admin') ? MODULI.slice() : defaultModuli();
   });
 }
 
@@ -2015,7 +2017,10 @@ function accessibleFirmaIds() {
 }
 
 function isGlavniAdmin() {
-  return !!(currentSessionUser && currentSessionUser.firma_id == null);
+  return !!(currentSessionUser && currentSessionUser.role === 'super_admin');
+}
+function isFirmaAdmin() {
+  return !!(currentSessionUser && currentSessionUser.role === 'administrator');
 }
 
 // ---------- Provjera dozvola po modulu ----------
@@ -2025,7 +2030,8 @@ function isGlavniAdmin() {
 function permissionLevel(module) {
   const u = currentSessionUser;
   if (!u) return 'nema';
-  if (u.role === 'administrator' && u.firma_id == null) return 'puno';
+  if (u.role === 'super_admin') return 'puno';
+  if (u.role === 'administrator') return 'puno'; // firma admin - puno za svoju firmu
   if (!u.permissions || !u.permissions[module]) return 'pregled';
   return u.permissions[module];
 }
@@ -2167,7 +2173,14 @@ function computeDerived(emp) {
 }
 
 function renumber() {
-  employees.forEach((e, i) => e.Redni_broj = String(i + 1));
+  // Redni broj kreće od 1 per firma (po Restoran/poslovnici)
+  const firmaCount = {};
+  employees.forEach(e => {
+    const key = e.firma_id || e.Restoran || 'default';
+    if (!firmaCount[key]) firmaCount[key] = 0;
+    firmaCount[key]++;
+    e.Redni_broj = String(firmaCount[key]);
+  });
 }
 
 function populateTipFilter() {
@@ -2500,6 +2513,18 @@ $('empForm').addEventListener('submit', async (e) => {
   });
   emp.Ime_i_prezime = `${ime} ${prezime}`.trim();
 
+  // ── JMBG duplikat provjera ──────────────────────────────
+  const jmbg = (emp.JMBG || '').trim();
+  if (jmbg && jmbg !== '0000000000000') {
+    const dupIdx = employees.findIndex((e, i) =>
+      i !== editingIndex && (e.JMBG || '').trim() === jmbg
+    );
+    if (dupIdx >= 0) {
+      toast(`Greška: JMBG "${jmbg}" već postoji kod zaposlenog "${employees[dupIdx].Ime_i_prezime}"!`);
+      return;
+    }
+  }
+
   let savedIndex;
   if (editingIndex === null) {
     employees.push(emp);
@@ -2507,7 +2532,6 @@ $('empForm').addEventListener('submit', async (e) => {
     await saveData();
     await logAction('Dodan', emp.Ime_i_prezime, 'Novi zaposleni unesen u bazu.');
     savedIndex = employees.indexOf(emp);
-    // Nakon prvog snimanja, prebaci formu u "izmjena" mod za isti zapis
     editingIndex = savedIndex;
     $('modalTitle').textContent = 'Izmjena podataka';
     $('deleteBtn').style.display = canDelete('zaposleni') ? '' : 'none';
@@ -3021,9 +3045,13 @@ function renderUsersModal() {
     const roleBtn = document.createElement('button');
     roleBtn.type = 'button';
     roleBtn.className = 'ghost small';
-    roleBtn.textContent = u.role === 'administrator' ? 'Učini korisnikom' : 'Učini administratorom';
+    roleBtn.textContent = (u.role === 'administrator' || u.role === 'super_admin') ? 'Učini korisnikom' : 'Učini administratorom';
+    // Firma admin može dodijeliti samo administrator (ne super_admin) role
+    if (!isGlavniAdmin() && u.role === 'super_admin') roleBtn.style.display = 'none';
     roleBtn.disabled = onlyAdmin;
     roleBtn.addEventListener('click', async () => {
+      // Super admin ostaje super_admin, ne može biti degradiran ovdje
+      if (u.role === 'super_admin') { toast('Super administrator se ne može degradirati ovdje.'); return; }
       u.role = u.role === 'administrator' ? 'korisnik' : 'administrator';
       await saveUsers();
       await logAction('Korisnici', '', `Promijenjena uloga korisnika "${u.username}" u "${u.role}"`);
@@ -3601,23 +3629,37 @@ function getOrCreateRaspored(radnoMjesto) {
   if (!r) {
     r = {
       radno_mjesto:   radnoMjesto,
-      smjena1:        { od: '08:00', do: '16:00' },
-      smjena2:        { od: '16:00', do: '00:00' },
-      medju:          { od: '12:00', do: '20:00' },
+      smjena1:        { od: '', do: '' },
+      smjena2:        { od: '', do: '' },
+      medju:          { od: '', do: '' },
       slobodnih_dana: 2,
     };
     radniRaspored.push(r);
   }
   if (r.slobodnih_dana === undefined) r.slobodnih_dana = 2;
-  if (!r.smjena1) r.smjena1 = { od: '08:00', do: '16:00' };
-  if (!r.smjena2) r.smjena2 = { od: '16:00', do: '00:00' };
-  if (!r.medju)   r.medju   = { od: '12:00', do: '20:00' };
+  if (!r.smjena1) r.smjena1 = { od: '', do: '' };
+  if (!r.smjena2) r.smjena2 = { od: '', do: '' };
+  if (!r.medju)   r.medju   = { od: '', do: '' };
   return r;
 }
 
+// Provjeri da li je smjena aktivna (nije prazna i nije 00:00-00:00)
+function jeSmjenaAktivna(smjena) {
+  if (!smjena) return false;
+  const od = (smjena.od || '').trim();
+  const do_ = (smjena.do || '').trim();
+  if (!od && !do_) return false;
+  if (od === '00:00' && do_ === '00:00') return false;
+  return true;
+}
+
 function planDanaPoRasporedu(raspored, datum) {
-  if (!raspored || !raspored.smjena1) return { pocetak: '08:00', kraj: '16:00' };
-  return { pocetak: raspored.smjena1.od || '08:00', kraj: raspored.smjena1.do || '16:00' };
+  if (!raspored) return { pocetak: '', kraj: '' };
+  // Uzmi prvu aktivnu smjenu
+  if (jeSmjenaAktivna(raspored.smjena1)) return { pocetak: raspored.smjena1.od, kraj: raspored.smjena1.do };
+  if (jeSmjenaAktivna(raspored.smjena2)) return { pocetak: raspored.smjena2.od, kraj: raspored.smjena2.do };
+  if (jeSmjenaAktivna(raspored.medju))   return { pocetak: raspored.medju.od,   kraj: raspored.medju.do };
+  return { pocetak: '', kraj: '' };
 }
 
 
@@ -3649,14 +3691,27 @@ function openRasporedModal(rmId) {
     { key:'smjena2', label:'Smjena 2' },
     { key:'medju',   label:'Međusmjena' },
   ].forEach(({ key, label }) => {
+    const aktivan = jeSmjenaAktivna(r[key]);
     const wrap = document.createElement('div');
-    wrap.innerHTML = `<div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;">${label}</div>`;
+    wrap.style.cssText = `border:2px solid ${aktivan ? 'var(--accent)' : 'var(--line)'};border-radius:8px;padding:10px 12px;background:${aktivan ? 'var(--accent-soft)' : '#fafafa'};`;
+    wrap.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+      <span style="font-size:12px;font-weight:700;color:${aktivan ? 'var(--accent)' : 'var(--muted)'};">${label}</span>
+      <span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:${aktivan ? 'var(--accent)' : 'var(--line)'};color:${aktivan ? '#fff' : 'var(--muted)'};">${aktivan ? 'AKTIVNA' : 'NEAKTIVNA'}</span>
+    </div>`;
     const row = document.createElement('div');
     row.style.cssText = 'display:flex;gap:4px;align-items:center;';
     const odInp = document.createElement('input'); odInp.type='time'; odInp.value=(r[key]&&r[key].od)||''; odInp.disabled=!canEdit; odInp.style.flex='1';
     const sep = document.createElement('span'); sep.textContent='–'; sep.style.color='var(--muted)';
     const doInp = document.createElement('input'); doInp.type='time'; doInp.value=(r[key]&&r[key].do)||''; doInp.disabled=!canEdit; doInp.style.flex='1';
-    const save = async () => { if(!r[key])r[key]={}; r[key].od=odInp.value; r[key].do=doInp.value; await saveRadniRaspored(); toast('Sačuvano.'); };
+    const save = async () => {
+      if(!r[key])r[key]={};
+      r[key].od=odInp.value;
+      r[key].do=doInp.value;
+      await saveRadniRaspored();
+      toast('Sačuvano.');
+      // Osvježi prikaz da se badge ažurira
+      openRasporedModal(rmId);
+    };
     odInp.addEventListener('change', save); doInp.addEventListener('change', save);
     row.appendChild(odInp); row.appendChild(sep); row.appendChild(doInp);
     wrap.appendChild(row); smjeneGrid.appendChild(wrap);
@@ -5480,7 +5535,7 @@ async function attemptLogin() {
   const user = users.find(x => x.username.toLowerCase() === u.toLowerCase() && x.password === p);
   if (!user) { document.getElementById('loginError').textContent = 'Pogrešno korisničko ime ili šifra.'; return; }
   currentSessionUser = user;
-  isAdmin = user.role === 'administrator';
+  isAdmin = user.role === 'super_admin' || user.role === 'administrator';
   document.getElementById('loggedUserName').textContent = user.name || user.username;
   document.getElementById('loginError').textContent = '';
   document.getElementById('loginPassword').value = '';
