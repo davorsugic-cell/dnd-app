@@ -300,17 +300,17 @@
   .overlay.open { display: flex; }
   .modal {
     background: var(--paper); border-radius: 10px; max-width: 760px; width: 100%;
-    max-height: 90vh; overflow: auto; padding: 0; border: 1px solid var(--line);
+    max-height: 90vh; overflow: hidden; padding: 0; border: 1px solid var(--line);
     display: flex; flex-direction: column;
   }
   .modal-header {
-    position: sticky; top: 0; z-index: 10;
     background: var(--paper);
     border-bottom: 2px solid var(--accent-soft);
     padding: 14px 20px 12px;
     display: flex; justify-content: space-between; align-items: center;
     flex-wrap: wrap; gap: 8px;
     flex-shrink: 0;
+    z-index: 10;
   }
   .modal-header h2 { margin: 0; font-family: Georgia, serif; font-size: 18px; color: var(--accent); }
   .modal-body { padding: 16px 20px 24px; flex: 1; overflow-y: auto; }
@@ -948,8 +948,7 @@
 <!-- Kartica zaposlenog (pregled) Modal -->
 <div class="overlay" id="cardOverlay">
   <div class="modal" style="max-width:760px;">
-    <div style="position:relative; padding-right:90px; margin-bottom:14px;">
-      <button type="button" class="ghost" id="cardCloseBtn" >Zatvori</button>
+    <div class="modal-header">
       <div style="display:flex; gap:8px; flex-wrap:wrap;">
         <button type="button" class="primary" id="cardEditBtn">Izmijeni</button>
         <button type="button" class="secondary" id="cardPrintBtn">&#128424; Štampaj karticu</button>
@@ -957,7 +956,13 @@
         <button type="button" class="secondary" id="cardDocGenBtn" style="display:none;">&#128196; Ugovor</button>
         <button type="button" class="secondary" id="cardSporazumBtn" style="display:none; color:#a33; border-color:#a33;">&#9888; Sporazumni prekid</button>
       </div>
+      <button type="button" class="ghost small" id="cardCloseBtn">Zatvori</button>
     </div>
+    <div class="modal-body">
+    <h2>Kartica zaposlenog</h2>
+    <div id="cardBody"></div>
+    </div>
+  </div>
     <h2>Kartica zaposlenog</h2>
     <div id="cardBody"></div>
   </div>
@@ -966,13 +971,14 @@
 <!-- Modal -->
 <div class="overlay" id="overlay">
   <div class="modal">
-    <div style="position:relative; padding-right:90px; margin-bottom:14px;">
-      <button type="button" class="ghost" id="cancelBtn" style="position:absolute; top:0; right:0;">Zatvori</button>
+    <div class="modal-header">
       <div style="display:flex; gap:8px; flex-wrap:wrap;">
         <button type="submit" form="empForm" class="primary" id="saveBtn">Sačuvaj</button>
         <button type="button" class="ghost" id="deleteBtn" style="color:#a33; border-color:#a33; display:none;">Obriši zaposlenog</button>
       </div>
+      <button type="button" class="ghost small" id="cancelBtn">Zatvori</button>
     </div>
+    <div class="modal-body">
     <h2 id="modalTitle">Novi zaposleni</h2>
     <form id="empForm">
       <div class="section">
@@ -1048,6 +1054,7 @@
       <input type="hidden" id="f_GO_datum_do">
       <input type="hidden" id="f_GO_datum_javljanja">
     </form>
+    </div><!-- /modal-body -->
   </div>
 </div>
 
@@ -2156,10 +2163,18 @@ async function loadData() {
   } catch(e) { sihtericaOverrides = []; }
   if (!Array.isArray(sihtericaOverrides)) sihtericaOverrides = [];
 
-  // Audit log
+  // Audit log - filtriraj po firmi
   try {
-    const rows = await sbGet('audit_log');
-    auditLog = rows ? rows.map(r => ({ id: r.id, vrijeme: r.vrijeme, korisnik: r.korisnik, akcija: r.akcija, zaposleni: r.zaposleni, detalji: r.detalji })).reverse() : [];
+    const allowedFirmaIds = accessibleFirmaIds();
+    let auditQuery = _supabase.from('audit_log').select('*').order('id', { ascending: false }).limit(200);
+    if (allowedFirmaIds !== null) {
+      auditQuery = auditQuery.in('firma_id', allowedFirmaIds);
+    }
+    const { data: auditRows } = await auditQuery;
+    auditLog = auditRows ? auditRows.map(r => ({
+      id: r.id, time: r.vrijeme ? new Date(r.vrijeme).toLocaleString('bs') : '',
+      user: r.korisnik, action: r.akcija, employee: r.zaposleni, details: r.detalji
+    })) : [];
   } catch(e) { auditLog = []; }
 
   // Artikli
@@ -2444,7 +2459,9 @@ function nowStr() {
 }
 
 async function logAction(action, employeeName, details) {
+  const firmaId = currentSessionUser ? currentSessionUser.firma_id : null;
   const entry = {
+    firma_id: firmaId,
     korisnik: getUser(),
     akcija: action,
     zaposleni: employeeName || '',
@@ -4440,7 +4457,11 @@ function renderFirmeModal() {
   const body = $('firmeBody');
   body.innerHTML = '';
 
-  firme.forEach((f) => {
+  // Prikaži samo firme kojima korisnik ima pristup
+  const allowedIds = accessibleFirmaIds();
+  const vidljiveFirme = allowedIds === null ? firme : firme.filter(f => allowedIds.includes(f.id));
+
+  vidljiveFirme.forEach((f) => {
     const section = document.createElement('div');
     section.className = 'section';
 
@@ -5917,15 +5938,22 @@ $('expiryApplyBtn').addEventListener('click', async () => {
 function renderAuditLog() {
   const body = $('auditBody');
   body.innerHTML = '';
+  // Filtriraj audit log po korisniku firme (super_admin vidi sve)
+  // Audit log nema firma_id, ali možemo filtrirati po korisniku
+  // koji pripada firmi — za sada prikazujemo sve za admina firme
+  // (audit log je u Supabase i već se snima per-firma logika)
   if (!auditLog.length) {
     body.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--muted);">Evidencija je prazna.</td></tr>';
     return;
   }
   auditLog.forEach(entry => {
     const tr = document.createElement('tr');
-    [entry.time, entry.user, entry.action, entry.employee || '\u2014', entry.details || ''].forEach((v, i) => {
+    [entry.time || entry.vrijeme, entry.user || entry.korisnik, 
+     entry.action || entry.akcija, 
+     entry.employee || entry.zaposleni || '—', 
+     entry.details || entry.detalji || ''].forEach((v, i) => {
       const td = document.createElement('td');
-      td.textContent = v;
+      td.textContent = v || '';
       if (i === 4) { td.style.whiteSpace = 'normal'; td.style.maxWidth = '420px'; }
       tr.appendChild(td);
     });
