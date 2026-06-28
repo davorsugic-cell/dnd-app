@@ -650,6 +650,15 @@
     <button class="sidebar-item active" id="sb_zaposleni" type="button" onclick="sidebarClick('sb_zaposleni', 'navZaposleniBtn')">
       <span class="ico">👥</span> Zaposleni
     </button>
+    <button class="sidebar-item" id="sb_radnaMjesta" type="button" onclick="sidebarClick('sb_radnaMjesta', 'radnaMjestaBtn')">
+      <span class="ico">🏷</span> Radna mjesta
+    </button>
+    <button class="sidebar-item" id="sb_odjeli" type="button" onclick="sidebarClick('sb_odjeli', 'odjeliBtn')">
+      <span class="ico">🏢</span> Odjeli
+    </button>
+    <button class="sidebar-item" id="sb_go" type="button" onclick="sidebarClick('sb_go', 'godisnjiOdmoriBtn')">
+      <span class="ico">🌴</span> Godišnji odmori
+    </button>
   </div>
 
   <!-- Šifarnici -->
@@ -657,12 +666,6 @@
     Šifarnici <span class="arrow">▾</span>
   </div>
   <div class="sidebar-group-items collapsed">
-    <button class="sidebar-item" id="sb_radnaMjesta" type="button" onclick="sidebarClick('sb_radnaMjesta', 'radnaMjestaBtn')">
-      <span class="ico">🏷</span> Radna mjesta
-    </button>
-    <button class="sidebar-item" id="sb_odjeli" type="button" onclick="sidebarClick('sb_odjeli', 'odjeliBtn')">
-      <span class="ico">🏢</span> Odjeli
-    </button>
     <button class="sidebar-item" id="sb_tipUgovora" type="button" onclick="sidebarClick('sb_tipUgovora', 'tipUgovoraBtn')">
       <span class="ico">📋</span> Tip ugovora
     </button>
@@ -693,9 +696,6 @@
     </button>
     <button class="sidebar-item" id="sb_expiry" type="button" onclick="sidebarClick('sb_expiry', 'expiryBtn')">
       <span class="ico">⚠️</span> Istek ugovora
-    </button>
-    <button class="sidebar-item" id="sb_go" type="button" onclick="sidebarClick('sb_go', 'godisnjiOdmoriBtn')">
-      <span class="ico">🌴</span> Godišnji odmori
     </button>
     <button class="sidebar-item" id="sb_sihterica" type="button" onclick="sidebarClick('sb_sihterica', 'sihtericaBtn')">
       <span class="ico">⏱</span> Šihterica
@@ -812,6 +812,51 @@
   </div>
 
   <div class="footer-credit">Design by DND Solutions</div>
+
+  <!-- ── Godišnji odmori sekcija ───────────────────────── -->
+  <div id="goSection" style="display:none;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+      <div>
+        <h2 style="margin:0; font-family:Georgia,serif; font-size:22px; color:var(--accent);">Godišnji odmori</h2>
+        <p style="font-size:12px; color:var(--muted); margin:4px 0 0;">
+          Osnova: <span id="goOsnovicaText2">20</span> dana + <span id="goUvecanjeText2">1</span> dan / <span id="goPragText2">5</span> god. staža
+        </p>
+      </div>
+    </div>
+
+    <!-- Filteri -->
+    <div class="toolbar" style="margin-bottom:12px;">
+      <input type="search" id="goSearch" placeholder="Pretraga po imenu..." style="min-width:200px; flex:1;">
+      <select id="goFilterRestoran">
+        <option value="">Sve poslovnice</option>
+      </select>
+      <select id="goFilterGodina">
+        <option value="">Sve godine</option>
+      </select>
+    </div>
+
+    <div id="goCountInfo" style="font-size:12px; color:var(--muted); margin-bottom:8px;"></div>
+
+    <div class="table-wrap">
+      <table id="goTable">
+        <thead>
+          <tr>
+            <th>Br.</th>
+            <th>Ime i prezime</th>
+            <th>Poslovnica</th>
+            <th>Radno mjesto</th>
+            <th>Pravo (dani)</th>
+            <th>Iskorišteno</th>
+            <th>Preostalo</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="goTableBody"></tbody>
+      </table>
+      <div class="empty" id="goTableEmpty" style="display:none;">Nema zaposlenih.</div>
+    </div>
+  </div>
+
 </div>
 
 <!-- ═══ MODUL: OBRAČUN PLATA ═══════════════════════════════════════════ -->
@@ -933,11 +978,11 @@
       <div class="section">
         <h3>Osnovni podaci</h3>
         <div class="grid">
-          <div class="field"><label>Ime</label><input type="text" id="f_Ime" required></div>
-          <div class="field"><label>Prezime</label><input type="text" id="f_Prezime" required></div>
+          <div class="field"><label>Ime <span style="color:#a33;">*</span></label><input type="text" id="f_Ime" required></div>
+          <div class="field"><label>Prezime <span style="color:#a33;">*</span></label><input type="text" id="f_Prezime" required></div>
           <div class="field"><label>Ime roditelja <span class="opt">(opciono)</span></label><input type="text" id="f_Ime_roditelja"></div>
           <div class="field"><label>Datum rođenja</label><input type="text" id="f_Datum_rodjenja" placeholder="dd.mm.gggg"></div>
-          <div class="field"><label>JMBG</label><input type="text" id="f_JMBG" maxlength="13" placeholder="13 cifara"></div>
+          <div class="field"><label>JMBG <span style="color:#a33;">*</span></label><input type="text" id="f_JMBG" maxlength="13" placeholder="13 cifara"></div>
         </div>
       </div>
       <div class="section">
@@ -962,21 +1007,21 @@
         <h3>Radni podaci</h3>
         <div class="grid">
           <div class="field" id="f_RestoranWrap">
-            <label>Poslovnica <span class="opt">(ako firma ima više poslovnica)</span></label>
+            <label>Firma / Poslovnica</label>
             <select id="f_Restoran"></select>
           </div>
           <div class="field">
             <label>Odjel</label>
             <select id="f_Odjel"></select>
           </div>
-          <div class="field full"><label>Radno mjesto</label><select id="f_Radno_mjesto"></select></div>
+          <div class="field full"><label>Radno mjesto <span style="color:#a33;">*</span></label><select id="f_Radno_mjesto"></select></div>
           <div class="field">
             <label>Tip ugovora</label>
             <select id="f_Tip_ugovora"></select>
           </div>
           <div class="field"><label>Radno vrijeme (h/sedmično)</label><input type="text" id="f_Radno_vrijeme" value="40"></div>
-          <div class="field"><label>Datum stupanja na rad</label><input type="text" id="f_Datum_stupanja_na_rad" placeholder="dd.mm.gggg"></div>
-          <div class="field"><label>Datum prestanka ugovora <span class="opt">(za određeno/probni)</span></label><input type="text" id="f_Datum_prestanka_ugovora" placeholder="dd.mm.gggg"></div>
+          <div class="field"><label>Datum stupanja na rad <span style="color:#a33;">*</span></label><input type="text" id="f_Datum_stupanja_na_rad" placeholder="dd.mm.gggg"></div>
+          <div class="field" id="f_Datum_prestanka_ugovora_wrap"><label>Datum prestanka ugovora <span style="color:#a33;">*</span></label><input type="text" id="f_Datum_prestanka_ugovora" placeholder="dd.mm.gggg"></div>
           <div class="field"><label>Neto plata (KM)</label><input type="text" id="f_Neto_plata" placeholder="npr. 950"></div>
           <div class="field"><label>Bruto plata (KM)</label><input type="text" id="f_Bruto_plata" placeholder="npr. 1508,20"></div>
         </div>
@@ -2446,9 +2491,10 @@ function populateFormSelects(emp) {
   const defaultPoslovnica = emp.Restoran || poslovnicaNazivi[0] || '';
   populateSelect($('f_Restoran'), poslovnicaNazivi, defaultPoslovnica, false);
 
-  // Ako je dostupna samo jedna poslovnica (ili nijedna), nema potrebe da korisnik bira -
-  // polje se sakriva, a vrijednost se postavlja automatski.
-  $('f_RestoranWrap').style.display = poslovnicaNazivi.length > 1 ? '' : 'none';
+  // Uvijek prikaži polje - korisnik treba znati u kojoj firmi/poslovnici dodaje zaposlenog
+  // Ako ima samo jednu poslovnicu, select je disabled (samo info)
+  $('f_RestoranWrap').style.display = '';
+  $('f_Restoran').disabled = poslovnicaNazivi.length <= 1;
 
   populateSelect($('f_Odjel'), codes.Odjel, emp.Odjel || '', true);
   populateSelect($('f_Radno_mjesto'), codes.Radno_mjesto, emp.Radno_mjesto || '', true);
@@ -2627,6 +2673,17 @@ function render() {
   filtered.forEach((emp) => {
     const realIndex = employees.indexOf(emp);
     const tr = document.createElement('tr');
+
+    // Checkbox za štampu
+    const tdCb = document.createElement('td');
+    tdCb.style.cssText = 'width:36px;text-align:center;padding:4px;';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.style.cursor = 'pointer';
+    cb.dataset.empIdx = String(realIndex);
+    cb.addEventListener('change', updatePrintSelection);
+    tdCb.appendChild(cb);
+    tr.appendChild(tdCb);
 
     const tdBroj = document.createElement('td');
     tdBroj.textContent = protokolBroj(emp);
@@ -2934,7 +2991,20 @@ $('printSelectedBtn').addEventListener('click', () => {
 });$('cancelBtn').addEventListener('click', closeModal);
 $('overlay').addEventListener('click', (e) => { if (e.target.id === 'overlay') closeModal(); });
 $('f_Restoran').addEventListener('change', fillPoslodavac);
-$('f_Tip_ugovora').addEventListener('change', autoRadnoVrijeme);
+$('f_Tip_ugovora').addEventListener('change', () => {
+  autoRadnoVrijeme();
+  toggleDatumPrestanka();
+});
+
+function toggleDatumPrestanka() {
+  const tip = $('f_Tip_ugovora').value;
+  const neodredjeni = ['NEO', 'Neodređeno', 'VLA', 'Vlasnik'];
+  const wrap = $('f_Datum_prestanka_ugovora_wrap');
+  if (!wrap) return;
+  const jeNeodredjeno = neodredjeni.some(v => tip === v || tip.toLowerCase().includes('neodređeno') || tip.toLowerCase().includes('vlasnik'));
+  wrap.style.display = jeNeodredjeno ? 'none' : '';
+  if (jeNeodredjeno) $('f_Datum_prestanka_ugovora').value = '';
+}
 
 $('deleteBtn').addEventListener('click', async () => {
   if (editingIndex === null) return;
@@ -2954,7 +3024,28 @@ $('empForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const ime = $('f_Ime').value.trim();
   const prezime = $('f_Prezime').value.trim();
-  if (!ime || !prezime) { toast('Ime i prezime su obavezni.'); return; }
+  if (!ime || !prezime) { toast('Ime i prezime su obavezni!'); return; }
+
+  // Validacija obaveznih polja
+  const obavezna = [
+    { id: 'f_JMBG', naziv: 'JMBG' },
+    { id: 'f_Datum_stupanja_na_rad', naziv: 'Datum stupanja na rad' },
+    { id: 'f_Radno_mjesto', naziv: 'Radno mjesto' },
+  ];
+  // Datum prestanka obavezan za sve osim Neodređeno i Vlasnik
+  const tip = $('f_Tip_ugovora').value;
+  const jeNeodredjeno = ['NEO','Neodređeno','VLA','Vlasnik'].some(v => tip === v || tip.toLowerCase().includes('neodređeno') || tip.toLowerCase().includes('vlasnik'));
+  if (!jeNeodredjeno) {
+    obavezna.push({ id: 'f_Datum_prestanka_ugovora', naziv: 'Datum prestanka ugovora' });
+  }
+  for (const polje of obavezna) {
+    const el = $(polje.id);
+    if (!el || !el.value.trim()) {
+      toast('Polje "' + polje.naziv + '" je obavezno!');
+      if (el) el.focus();
+      return;
+    }
+  }
 
   const emp = {};
   FIELD_ORDER.forEach(name => {
@@ -2962,6 +3053,13 @@ $('empForm').addEventListener('submit', async (e) => {
     emp[name] = el ? el.value.trim() : '';
   });
   emp.Ime_i_prezime = `${ime} ${prezime}`.trim();
+
+  // Osiguraj da Restoran uvijek bude popunjen
+  if (!emp.Restoran) {
+    const allowed = accessiblePoslovnicaNazivi();
+    if (allowed && allowed.length > 0) emp.Restoran = allowed[0];
+    else if (poslovnice.length > 0) emp.Restoran = poslovnice[0].naziv;
+  }
 
   // ── JMBG duplikat provjera ──────────────────────────────
   const jmbg = (emp.JMBG || '').trim();
@@ -3137,8 +3235,7 @@ function closeAllNavPanels() {
 }
 
 $('navZaposleniBtn').addEventListener('click', () => {
-  closeAllNavPanels();
-  $('navZaposleniBtn').classList.add('active');
+  showSection('zaposleni');
 });
 
 Object.entries(NAV_PANELS).forEach(([btnId, panelId]) => {
@@ -4338,7 +4435,8 @@ function renderFirmeModal() {
       const wrap = document.createElement('div');
       wrap.className = 'field' + ((field === 'naziv_pravni' || field === 'adresa') ? ' full' : '');
       const label = document.createElement('label');
-      label.textContent = FIRMA_LABELS[field];
+      const obaveznaFirma = ['naziv', 'naziv_pravni', 'adresa', 'jib', 'zastupnik'];
+      label.innerHTML = FIRMA_LABELS[field] + (obaveznaFirma.includes(field) ? ' <span style="color:#a33;">*</span>' : '');
       const input = document.createElement('input');
       input.type = 'text';
       input.value = f[field] || '';
@@ -4358,6 +4456,17 @@ function renderFirmeModal() {
     saveBtn.className = 'secondary small';
     saveBtn.textContent = 'Sačuvaj podatke firme';
     saveBtn.addEventListener('click', async () => {
+      // Validacija obaveznih polja firme
+      const obaveznaFirma = ['naziv', 'naziv_pravni', 'adresa', 'jib', 'zastupnik'];
+      for (const field of obaveznaFirma) {
+        if (!inputs[field].value.trim()) {
+          toast('Polje "' + FIRMA_LABELS[field] + '" je obavezno!');
+          inputs[field].focus();
+          inputs[field].style.borderColor = '#a33';
+          setTimeout(() => { inputs[field].style.borderColor = ''; }, 2000);
+          return;
+        }
+      }
       FIRMA_FIELDS.forEach(field => { f[field] = inputs[field].value.trim(); });
       await saveFirme();
       await logAction('Firme', '', `Izmijenjena firma "${f.naziv}"`);
@@ -4802,8 +4911,7 @@ function openGoModalForEmployee(index) {
 }
 
 $('godisnjiOdmoriBtn').addEventListener('click', () => {
-  renderGoModal();
-  $('goOverlay').classList.add('open');
+  showSection('go');
 });
 $('goCloseBtn').addEventListener('click', () => $('goOverlay').classList.remove('open'));
 $('goOverlay').addEventListener('click', (e) => { if (e.target.id === 'goOverlay') $('goOverlay').classList.remove('open'); });
@@ -5892,7 +6000,7 @@ function toggleSidebarGroup(titleEl) {
 
 // Mapa: sidebar ID -> akcija (direktno, bez klikanja skrivenih dugmadi)
 const SIDEBAR_ACTIONS = {
-  sb_zaposleni:      () => { closeAllNavPanels(); $('navZaposleniBtn').classList.add('active'); },
+  sb_zaposleni:      () => { showSection('zaposleni'); },
   sb_radnaMjesta:    () => { renderSingleCodeList('Radno_mjesto', 'radnoMjestoListBody'); renderRaspored(); updateRoleUI(); $('radnaMjestaOverlay').classList.add('open'); },
   sb_odjeli:         () => { renderSingleCodeList('Odjel', 'odjeliBody'); updateRoleUI(); $('odjeliOverlay').classList.add('open'); },
   sb_tipUgovora:     () => { renderSingleCodeList('Tip_ugovora', 'tipUgovoraBody'); updateRoleUI(); $('tipUgovoraOverlay').classList.add('open'); },
@@ -5902,7 +6010,7 @@ const SIDEBAR_ACTIONS = {
   sb_komitenti:      () => { resetKomitentForm(); renderKomitentiModal(); $('komitentiOverlay').classList.add('open'); },
   sb_reports:        () => { renderReports(); $('reportsOverlay').classList.add('open'); },
   sb_expiry:         () => { expirySelection = new Set(); renderExpiryModal(); $('expiryOverlay').classList.add('open'); },
-  sb_go:             () => { renderGoModal(); $('goOverlay').classList.add('open'); },
+  sb_go:             () => { showSection('go'); },
   sb_sihterica:      () => { populateSihFilters(); populateSihEmployeeSelect(); renderSihtericaTable(); $('sihtericaOverlay').classList.add('open'); },
   sb_users:          () => { renderUsersModal(); $('usersOverlay').classList.add('open'); },
   sb_audit:          () => { renderAuditLog(); updateRoleUI(); $('auditOverlay').classList.add('open'); },
@@ -5948,16 +6056,25 @@ function updateSidebar() {
   document.getElementById('sb_firme').style.display = (isGlavniAdmin() && canView('firme')) ? '' : 'none';
   document.getElementById('sb_users').style.display = isAdmin ? '' : 'none';
   document.getElementById('sb_zaposleni').style.display = canView('zaposleni') ? '' : 'none';
+  // Zaposleni grupa
+  document.getElementById('sb_zaposleni').style.display = canView('zaposleni') ? '' : 'none';
+  document.getElementById('sb_radnaMjesta').style.display = canView('sifarnici') ? '' : 'none';
+  document.getElementById('sb_odjeli').style.display = canView('sifarnici') ? '' : 'none';
   document.getElementById('sb_go').style.display = canView('godisnji_odmori') ? '' : 'none';
-  document.getElementById('sb_sihterica').style.display = canView('godisnji_odmori') ? '' : 'none';
-  document.getElementById('sb_reports').style.display = canView('izvjestaji') ? '' : 'none';
-  document.getElementById('sb_expiry').style.display = canView('izvjestaji') ? '' : 'none';
-  document.getElementById('sb_audit').style.display = canView('evidencija') ? '' : 'none';
+  // Šifarnici grupa
   const sifarniciVisible = canView('sifarnici');
-  ['sb_radnaMjesta','sb_odjeli','sb_tipUgovora','sb_strucnaSprema','sb_praznici','sb_komitenti']
+  ['sb_tipUgovora','sb_strucnaSprema','sb_praznici','sb_komitenti']
     .forEach(id => { document.getElementById(id).style.display = sifarniciVisible ? '' : 'none'; });
+  document.getElementById('sb_firme').style.display = (isGlavniAdmin() && canView('firme')) ? '' : 'none';
   const goPodesEl = document.getElementById('sb_goPodesavanja');
   if (goPodesEl) goPodesEl.style.display = (isAdmin && sifarniciVisible) ? '' : 'none';
+  // Izvještaji
+  document.getElementById('sb_reports').style.display = canView('izvjestaji') ? '' : 'none';
+  document.getElementById('sb_expiry').style.display = canView('izvjestaji') ? '' : 'none';
+  document.getElementById('sb_sihterica').style.display = canView('godisnji_odmori') ? '' : 'none';
+  // Administracija
+  document.getElementById('sb_users').style.display = isAdmin ? '' : 'none';
+  document.getElementById('sb_audit').style.display = canView('evidencija') ? '' : 'none';
 
   // Prikaži/sakrij sidebar i mainContent
   const isLoggedIn = !!currentSessionUser;
@@ -6041,9 +6158,11 @@ function switchModule(modul) {
   });
   // Ažuriraj sidebar stavke - sakrij nerel. kad nije kadrovska
   const isKadrovska = modul === 'kadrovska';
-  ['sb_zaposleni','sb_radnaMjesta','sb_odjeli','sb_tipUgovora','sb_strucnaSprema',
-   'sb_praznici','sb_firme','sb_komitenti','sb_goPodesavanja',
-   'sb_reports','sb_expiry','sb_go','sb_sihterica','sb_users','sb_audit']
+  ['sb_zaposleni','sb_radnaMjesta','sb_odjeli','sb_go',
+   'sb_tipUgovora','sb_strucnaSprema','sb_praznici','sb_goPodesavanja',
+   'sb_firme','sb_komitenti',
+   'sb_reports','sb_expiry','sb_sihterica',
+   'sb_users','sb_audit']
     .forEach(id => {
       const el = document.getElementById(id);
       if (el) el.style.display = isKadrovska ? '' : 'none';
@@ -6212,6 +6331,165 @@ function updateMobileBar() {
 }
 
 window.addEventListener('resize', updateMobileBar);
+
+// ── Sekcije (zaposleni / go) ──────────────────────────────────────────────────
+let currentSection = 'zaposleni';
+
+function showSection(section) {
+  currentSection = section;
+  const goSec = document.getElementById('goSection');
+  const empSec = document.getElementById('employeesSection');
+
+  // Pronađi zaposleni sekciju (tabela + toolbar)
+  const tables = document.querySelectorAll('.table-wrap');
+
+  if (section === 'go') {
+    if (goSec) goSec.style.display = '';
+    // Sakrij tabelu zaposlenih
+    const countInfo = $('countInfo');
+    if (countInfo) countInfo.style.display = 'none';
+    // Sakrij toolbar search/filter/add za zaposlene
+    document.querySelectorAll('#search, #filterRestoran, #filterTip, #filterSamoAktivniWrap, #addBtn, #printSelectedBtn, #exportBtn, #checkAll').forEach(el => {
+      if (el && el.closest && el.closest('.toolbar')) el.closest('.toolbar').style.display = 'none';
+    });
+    // Sakrij tabelu zaposlenih
+    const mainTable = document.querySelector('#tbody');
+    if (mainTable && mainTable.closest('.table-wrap')) mainTable.closest('.table-wrap').style.display = 'none';
+    renderGoTable();
+    renderGoSettingsTexts();
+    // Sync GO tekst u sekciji
+    const o2 = document.getElementById('goOsnovicaText2');
+    const u2 = document.getElementById('goUvecanjeText2');
+    const p2 = document.getElementById('goPragText2');
+    if (o2) o2.textContent = $('goOsnovicaText') ? $('goOsnovicaText').textContent : '20';
+    if (u2) u2.textContent = $('goUvecanjeText') ? $('goUvecanjeText').textContent : '1';
+    if (p2) p2.textContent = $('goPragText') ? $('goPragText').textContent : '5';
+  } else {
+    // Zaposleni sekcija
+    if (goSec) goSec.style.display = 'none';
+    const countInfo = $('countInfo');
+    if (countInfo) countInfo.style.display = '';
+    document.querySelectorAll('.toolbar').forEach(t => t.style.display = '');
+    const mainTable = document.querySelector('#tbody');
+    if (mainTable && mainTable.closest('.table-wrap')) mainTable.closest('.table-wrap').style.display = '';
+    render();
+  }
+
+  // Ažuriraj sidebar active state
+  document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
+  const sbId = section === 'go' ? 'sb_go' : 'sb_zaposleni';
+  const sbEl = document.getElementById(sbId);
+  if (sbEl) sbEl.classList.add('active');
+}
+
+function renderGoTable() {
+  const search = ($('goSearch') ? $('goSearch').value : '').trim().toLowerCase();
+  const fRestoran = $('goFilterRestoran') ? $('goFilterRestoran').value : '';
+  const fGodina = $('goFilterGodina') ? parseInt($('goFilterGodina').value) : 0;
+  const godina = fGodina || new Date().getFullYear();
+
+  const allowed = accessiblePoslovnicaNazivi();
+  let filtered = employees.filter(e => {
+    if (allowed !== null && !allowed.includes(e.Restoran)) return false;
+    if (search && !(e.Ime_i_prezime || '').toLowerCase().includes(search)) return false;
+    if (fRestoran && e.Restoran !== fRestoran) return false;
+    return true;
+  });
+
+  const tbody = document.getElementById('goTableBody');
+  const empty = document.getElementById('goTableEmpty');
+  const countInfo = document.getElementById('goCountInfo');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  if (countInfo) countInfo.textContent = 'Prikazano ' + filtered.length + ' zaposlenih — godina: ' + godina;
+
+  // Popuni filter poslovnice
+  const resSel = $('goFilterRestoran');
+  if (resSel) {
+    const current = resSel.value;
+    resSel.innerHTML = '<option value="">Sve poslovnice</option>';
+    const restorani = [...new Set(employees.map(e => e.Restoran).filter(Boolean))].sort();
+    restorani.forEach(r => {
+      const o = document.createElement('option');
+      o.value = r; o.textContent = r;
+      resSel.appendChild(o);
+    });
+    resSel.value = current;
+  }
+
+  // Popuni filter godina
+  const godSel = $('goFilterGodina');
+  if (godSel && godSel.options.length <= 1) {
+    const godineSet = new Set();
+    const g = new Date().getFullYear();
+    for (let y = g - 3; y <= g + 1; y++) godineSet.add(y);
+    [...godineSet].sort().forEach(y => {
+      const o = document.createElement('option');
+      o.value = y; o.textContent = y;
+      if (y === g) o.selected = true;
+      godSel.appendChild(o);
+    });
+  }
+
+  if (!filtered.length) {
+    if (empty) empty.style.display = '';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+
+  filtered.forEach((emp, i) => {
+    const realIdx = employees.indexOf(emp);
+    const pravo = izracunajPravoDanaGO(realIdx, godina);
+    const iskTag = goKoristenja.filter(k => {
+      if (k.emp_idx !== realIdx && k.emp_index !== realIdx) return false;
+      return k.godina === godina;
+    });
+    let iskorisceno = 0;
+    iskTag.forEach(k => {
+      (k.koristenja || []).forEach(g => { iskorisceno += (g.dana || 0); });
+    });
+    const preostalo = Math.max(0, pravo - iskorisceno);
+
+    const tr = document.createElement('tr');
+    [
+      emp.Redni_broj || (i+1),
+      emp.Ime_i_prezime || '',
+      emp.Restoran || '',
+      emp.Radno_mjesto || '',
+      pravo,
+      iskorisceno,
+      preostalo,
+    ].forEach((v, ci) => {
+      const td = document.createElement('td');
+      if (ci === 6) {
+        td.style.fontWeight = '700';
+        td.style.color = preostalo <= 0 ? '#a33' : preostalo <= 5 ? '#b06000' : '#2e7d32';
+      }
+      td.textContent = v;
+      tr.appendChild(td);
+    });
+
+    const tdAct = document.createElement('td');
+    const btn = document.createElement('button');
+    btn.className = 'ghost small';
+    btn.textContent = 'Detalji';
+    btn.addEventListener('click', () => openGoModalForEmployee(realIdx));
+    tdAct.appendChild(btn);
+    tr.appendChild(tdAct);
+    tbody.appendChild(tr);
+  });
+}
+
+// Event listeneri za GO filtere
+document.addEventListener('DOMContentLoaded', () => {
+  const gs = document.getElementById('goSearch');
+  const gr = document.getElementById('goFilterRestoran');
+  const gg = document.getElementById('goFilterGodina');
+  if (gs) gs.addEventListener('input', renderGoTable);
+  if (gr) gr.addEventListener('change', renderGoTable);
+  if (gg) gg.addEventListener('change', renderGoTable);
+});
 
 updateRoleUI();
 loadUsers();
