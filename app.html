@@ -17,6 +17,51 @@
     --muted: #5C6B82;
     --ok: #2E6B45;
     --row-alt: #EBF0F8;
+    /* Sidebar tema varijable */
+    --sb-bg: #16243D;
+    --sb-bg2: #1e2d52;
+    --sb-active: #2a5298;
+    --sb-active-border: #6ea8fe;
+    --sb-active-btn: #2a5298;
+    --sb-h1-color: #6ea8fe;
+    --btn-primary-bg: #1F3D7A;
+    --btn-primary-hover: #2a5298;
+    --header-accent: #1F3D7A;
+    --header-soft: #DCE6F6;
+  }
+
+  /* Obračun — zelena tema */
+  html.tema-obracun {
+    --sb-bg: #14301e;
+    --sb-bg2: #1a3d26;
+    --sb-active: #1a5c2e;
+    --sb-active-border: #4ade80;
+    --sb-active-btn: #1a5c2e;
+    --sb-h1-color: #4ade80;
+    --accent: #1a5c2e;
+    --accent-soft: #dcf5e4;
+    --row-alt: #ebf7ef;
+    --btn-primary-bg: #1a5c2e;
+    --btn-primary-hover: #22763a;
+    --header-accent: #1a5c2e;
+    --header-soft: #dcf5e4;
+  }
+
+  /* Troškovi — narančasta tema */
+  html.tema-troskovi {
+    --sb-bg: #2e1a08;
+    --sb-bg2: #3d2310;
+    --sb-active: #7c3a0a;
+    --sb-active-border: #fb923c;
+    --sb-active-btn: #7c3a0a;
+    --sb-h1-color: #fb923c;
+    --accent: #7c3a0a;
+    --accent-soft: #fdebd6;
+    --row-alt: #fef3eb;
+    --btn-primary-bg: #7c3a0a;
+    --btn-primary-hover: #a04d10;
+    --header-accent: #7c3a0a;
+    --header-soft: #fdebd6;
   }
   * { box-sizing: border-box; }
   body {
@@ -33,7 +78,7 @@
   #sidebar {
     width: 230px;
     min-width: 230px;
-    background: #16243D;
+    background: var(--sb-bg);
     color: #fff;
     display: none;
     flex-direction: column;
@@ -44,6 +89,7 @@
     z-index: 100;
     overflow-y: scroll;
     overflow-x: hidden;
+    transition: background 0.3s;
   }
   #sidebar.visible { display: flex; }
   .sidebar-logo {
@@ -64,7 +110,7 @@
     text-align: left;
   }
   .module-btn:hover { background: rgba(255,255,255,0.13); color: #fff; }
-  .module-btn.active { background: #2a5298; color: #fff; border-left: 3px solid #6ea8fe; }
+  .module-btn.active { background: var(--sb-active); color: #fff; border-left: 3px solid var(--sb-active-border); }
   .module-btn .mod-ico { font-size: 14px; width: 18px; text-align: center; }
   .module-label { font-size: 9px; letter-spacing:.08em; text-transform:uppercase;
     color:rgba(255,255,255,0.3); padding: 8px 12px 2px; }
@@ -151,7 +197,7 @@
     border-left: 3px solid transparent;
   }
   .sidebar-item:hover { background: rgba(255,255,255,0.07); color: #fff; border-left-color: rgba(255,255,255,0.2); }
-  .sidebar-item.active { background: rgba(255,255,255,0.12); color: #fff; border-left-color: #6ea8fe; }
+  .sidebar-item.active { background: rgba(255,255,255,0.12); color: #fff; border-left-color: var(--sb-active-border); }
   .sidebar-item .ico { font-size: 13px; width: 16px; text-align: center; opacity: .85; }
 
   /* ── Main content area ──────────────────────────────────── */
@@ -871,8 +917,12 @@
       <div class="section">
         <h3>Radni podaci</h3>
         <div class="grid">
-          <div class="field" id="f_RestoranWrap">
-            <label>Poslovnica <span class="opt">(ako firma ima više poslovnica)</span></label>
+          <div class="field">
+            <label>Firma <span style="color:red">*</span></label>
+            <select id="f_Firma"></select>
+          </div>
+          <div class="field" id="f_RestoranWrap" style="display:none;">
+            <label>Poslovnica <span class="opt">(opcionalno)</span></label>
             <select id="f_Restoran"></select>
           </div>
           <div class="field">
@@ -1615,7 +1665,7 @@ const FIRME_SEED = [
   {
     id: 1,
     naziv: 'APPETITO',
-    naziv_pravni: 'Krčma "APPETITO" Dejan Vuković s.p. – IJ Restoran "TRADICIONALNI RESTORAN"',
+    naziv_pravni: 'Krčma "APPETITO" Dejan Vuković s.p.',
     adresa: 'Ul. Veljka Mlađenovića br.12, 78000 Banja Luka',
     jib: '4512515800005',
     pib: '',
@@ -1629,16 +1679,23 @@ const FIRME_SEED = [
     jib: '0000000000000',
     pib: '',
     zastupnik: 'Test korisnik'
+  },
+  {
+    id: 3,
+    naziv: 'LAX',
+    naziv_pravni: 'LAX',
+    adresa: '',
+    jib: '',
+    pib: '',
+    zastupnik: ''
   }
 ];
 
 const POSLOVNICE_SEED = [
   { id: 1, firma_id: 1, naziv: 'APPETITO' },
-  { id: 2, firma_id: 1, naziv: 'TRADICIJA' },
-  { id: 3, firma_id: 2, naziv: 'TEST' }
+  { id: 2, firma_id: 1, naziv: 'TRADICIJA' }
 ];
 
-const KOMITENTI_SEED = [];
 
 const PRAZNICI_SEED = [
   { id: 1, firma_id: 1, datum: '01.01', naziv: 'Nova godina' },
@@ -2237,14 +2294,17 @@ function getFirmaForPoslovnica(naziv) {
   return firme.find(f => f.id === p.firma_id) || null;
 }
 
-// Određuje firmu poslodavca za formu: prvo po izabranoj poslovnici, a ako firma
-// nema definisanih poslovnica (ili korisnik ima pristup samo jednoj firmi bez
-// poslovnica), koristi se ta firma direktno.
+// Određuje firmu poslodavca za formu: koristi izabranu firmu iz dropdowna
 function resolveFirmaZaPoslodavca() {
-  const r = $('f_Restoran').value;
+  const firmaEl = $('f_Firma');
+  if (firmaEl && firmaEl.value) {
+    const f = firme.find(x => x.naziv === firmaEl.value);
+    if (f) return f;
+  }
+  // Fallback: po poslovnici
+  const r = $('f_Restoran') ? $('f_Restoran').value : '';
   const fromPoslovnica = getFirmaForPoslovnica(r);
   if (fromPoslovnica) return fromPoslovnica;
-
   const allowedFirmaIds = accessibleFirmaIds();
   const candidateFirme = allowedFirmaIds === null ? firme : firme.filter(f => allowedFirmaIds.includes(f.id));
   if (candidateFirme.length === 1) return candidateFirme[0];
@@ -2255,12 +2315,20 @@ function resolveFirmaZaPoslodavca() {
 // Returns array of poslovnica nazivi the current user can see, or null = sve (glavni administrator)
 function accessiblePoslovnicaNazivi() {
   const u = currentSessionUser;
-  if (!u || u.firma_id == null) return null;
+  if (!u || u.firma_id == null) return null; // super_admin vidi sve
   if (u.poslovnica_id != null) {
+    // Korisnik vezan za konkretnu poslovnicu
     const p = poslovnice.find(x => x.id === u.poslovnica_id);
     return p ? [p.naziv] : [];
   }
-  return poslovnice.filter(p => p.firma_id === u.firma_id).map(p => p.naziv);
+  // Korisnik vezan za firmu (bez konkretne poslovnice)
+  const firmaPoslovnice = poslovnice.filter(p => p.firma_id === u.firma_id);
+  if (firmaPoslovnice.length === 0) {
+    // Firma nema poslovnica (npr. LAX) — koristimo naziv firme kao identifikator
+    const firma = firme.find(f => f.id === u.firma_id);
+    return firma ? [firma.naziv] : [];
+  }
+  return firmaPoslovnice.map(p => p.naziv);
 }
 
 // Returns array of firma ids the current user can see, or null = sve (glavni administrator)
@@ -2368,15 +2436,46 @@ function populateSelect(selectEl, list, currentValue, allowEmpty) {
 
 function populateFormSelects(emp) {
   emp = emp || {};
-  const allowed = accessiblePoslovnicaNazivi();
-  const opts = allowed === null ? poslovnice : poslovnice.filter(p => allowed.includes(p.naziv));
-  const poslovnicaNazivi = opts.map(p => p.naziv);
-  const defaultPoslovnica = emp.Restoran || poslovnicaNazivi[0] || '';
-  populateSelect($('f_Restoran'), poslovnicaNazivi, defaultPoslovnica, false);
 
-  // Ako je dostupna samo jedna poslovnica (ili nijedna), nema potrebe da korisnik bira -
-  // polje se sakriva, a vrijednost se postavlja automatski.
-  $('f_RestoranWrap').style.display = poslovnicaNazivi.length > 1 ? '' : 'none';
+  // Firma dropdown — prikaži firme dostupne korisniku
+  const allowedFirmaIds = accessibleFirmaIds();
+  const dostupneFirme = allowedFirmaIds === null ? firme : firme.filter(f => allowedFirmaIds.includes(f.id));
+  const firmaEl = $('f_Firma');
+  firmaEl.innerHTML = '';
+  dostupneFirme.forEach(f => {
+    const opt = document.createElement('option');
+    opt.value = f.naziv;
+    opt.textContent = f.naziv;
+    firmaEl.appendChild(opt);
+  });
+  // Postavi trenutnu vrijednost
+  const currentFirma = emp.Restoran
+    ? (firme.find(f => poslovnice.some(p => p.firma_id === f.id && p.naziv === emp.Restoran))?.naziv || emp.Restoran)
+    : (dostupneFirme[0]?.naziv || '');
+  firmaEl.value = currentFirma;
+
+  // Poslovnica dropdown — prikaži poslovnice za izabranu firmu
+  function updatePoslovnicaDropdown(firmaNaziv, currentPoslovnica) {
+    const firma = firme.find(f => f.naziv === firmaNaziv);
+    const firmaPoslovnice = firma ? poslovnice.filter(p => p.firma_id === firma.id) : [];
+    if (firmaPoslovnice.length > 0) {
+      const poslovnicaNazivi = firmaPoslovnice.map(p => p.naziv);
+      populateSelect($('f_Restoran'), poslovnicaNazivi, currentPoslovnica || poslovnicaNazivi[0], false);
+      $('f_RestoranWrap').style.display = '';
+    } else {
+      $('f_Restoran').innerHTML = '';
+      $('f_RestoranWrap').style.display = 'none';
+    }
+  }
+
+  const currentPoslovnica = emp.Restoran && firme.some(f => f.naziv === emp.Restoran) ? '' : emp.Restoran;
+  updatePoslovnicaDropdown(currentFirma, currentPoslovnica);
+
+  // Kad se promijeni firma, ažuriraj poslovnice i poslodavca
+  firmaEl.onchange = () => {
+    updatePoslovnicaDropdown(firmaEl.value, '');
+    fillPoslodavac();
+  };
 
   populateSelect($('f_Odjel'), codes.Odjel, emp.Odjel || '', true);
   populateSelect($('f_Radno_mjesto'), codes.Radno_mjesto, emp.Radno_mjesto || '', true);
@@ -2896,6 +2995,13 @@ $('empForm').addEventListener('submit', async (e) => {
     emp[name] = el ? el.value.trim() : '';
   });
   emp.Ime_i_prezime = `${ime} ${prezime}`.trim();
+
+  // Restoran = poslovnica (ako postoji) ili firma (ako nema poslovnica)
+  const firmaEl = $('f_Firma');
+  const poslovnicaEl = $('f_Restoran');
+  const firmaNaziv = firmaEl ? firmaEl.value.trim() : '';
+  const poslovnicaNaziv = poslovnicaEl && $('f_RestoranWrap').style.display !== 'none' ? poslovnicaEl.value.trim() : '';
+  emp.Restoran = poslovnicaNaziv || firmaNaziv;
 
   // ── JMBG duplikat provjera ──────────────────────────────
   const jmbg = (emp.JMBG || '').trim();
@@ -6064,6 +6170,8 @@ function switchModule(modul) {
     h1.textContent = modulNazivi[modul] || modul;
     h1.className = 'mod-' + modul;
   }
+  // Promijeni temu cijele aplikacije
+  document.documentElement.className = modul === 'kadrovska' ? '' : 'tema-' + modul;
   // Ažuriraj sidebar stavke
   const isKadrovska = modul === 'kadrovska';
   ['sb_zaposleni','sb_radnaMjesta','sb_odjeli','sb_tipUgovora','sb_strucnaSprema',
