@@ -75,7 +75,45 @@
   .sidebar-logo h1 {
     font-family: Georgia, serif; font-size: 17px; margin: 4px 0 0;
     color: #fff; font-weight: 700;
+    transition: color 0.2s;
   }
+  /* Modulne boje za H1 */
+  .sidebar-logo h1.mod-kadrovska { color: #6ea8fe; }
+  .sidebar-logo h1.mod-obracun   { color: #4ade80; }
+  .sidebar-logo h1.mod-troskovi  { color: #fb923c; }
+
+  /* Firma dropdown */
+  .firma-dropdown-wrap { position: relative; margin-top: 6px; }
+  .firma-dropdown-btn {
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+    color: rgba(255,255,255,0.8); border-radius: 6px; padding: 5px 8px;
+    font-size: 11px; cursor: pointer; width: 100%; text-align: left;
+    display: flex; align-items: center; justify-content: space-between; gap: 4px;
+  }
+  .firma-dropdown-btn:hover { background: rgba(255,255,255,0.13); color: #fff; }
+  .firma-dropdown-btn .fdb-label { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .firma-dropdown-btn .fdb-arrow { opacity:0.5; font-size:9px; }
+  .firma-dropdown-panel {
+    display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+    background: #1a2d4f; border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px; z-index: 500; overflow: hidden;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+  .firma-dropdown-panel.open { display: block; }
+  .firma-search-input {
+    width: 100%; box-sizing: border-box;
+    background: rgba(255,255,255,0.07); border: none; border-bottom: 1px solid rgba(255,255,255,0.1);
+    color: #fff; padding: 7px 10px; font-size: 12px; outline: none;
+  }
+  .firma-search-input::placeholder { color: rgba(255,255,255,0.35); }
+  .firma-list { max-height: 160px; overflow-y: auto; }
+  .firma-list-item {
+    padding: 8px 10px; font-size: 12px; color: rgba(255,255,255,0.75);
+    cursor: pointer; transition: background 0.15s;
+  }
+  .firma-list-item:hover { background: rgba(255,255,255,0.1); color: #fff; }
+  .firma-list-item.active { background: rgba(37,99,235,0.35); color: #fff; font-weight: 600; }
+  .firma-list-item.all-firme { font-style: italic; color: rgba(255,255,255,0.5); }
   .sidebar-user {
     padding: 10px 16px;
     font-size: 12px;
@@ -364,71 +402,6 @@
     cursor: not-allowed;
   }
 
-  /* ---------- Login ekran - responsive ---------- */
-  .login-wrap { display:flex; width:100%; min-height:100vh; }
-  .login-branding {
-    flex:1; background:linear-gradient(145deg,#0f1c2e 0%,#16243D 60%,#1a3558 100%);
-    display:flex; flex-direction:column; align-items:center; justify-content:center;
-    padding:48px; position:relative; overflow:hidden;
-  }
-  .login-form-side {
-    width:420px; min-width:320px; background:#fff;
-    display:flex; flex-direction:column; align-items:center; justify-content:center;
-    padding:48px 40px;
-  }
-  @media (max-width: 760px) {
-    .login-wrap { flex-direction:column; min-height:100vh; height:auto; }
-    .login-branding { flex:0 0 auto; padding:28px 24px 20px; min-height:0; }
-    .login-branding img { width:130px !important; margin-bottom:14px !important; }
-    .login-branding h1 { font-size:20px !important; margin-bottom:8px !important; }
-    .login-branding p { font-size:12.5px !important; max-width:280px !important; }
-    .login-branding .login-modules-row { margin-top:18px !important; gap:18px !important; }
-    .login-branding .login-copyright { display:none; }
-    .login-form-side { width:100%; min-width:0; padding:28px 24px 32px; }
-  }
-
-  /* ---------- Mobilni sidebar (nakon prijave) ---------- */
-  .mobile-topbar { display: none; }
-  .sidebar-overlay-bg { display: none; }
-
-  @media (max-width: 900px) {
-    #sidebar {
-      transform: translateX(-100%);
-      transition: transform .25s ease;
-      width: 250px;
-      min-width: 250px;
-    }
-    #sidebar.visible { display: flex; transform: translateX(-100%); }
-    #sidebar.mobile-open { transform: translateX(0); box-shadow: 4px 0 24px rgba(0,0,0,0.35); }
-    #mainContent { margin-left: 0 !important; }
-
-    .mobile-topbar {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      position: sticky;
-      top: 0;
-      z-index: 90;
-      background: #16243D;
-      color: #fff;
-      padding: 10px 14px;
-      margin: -10px -8px 14px;
-    }
-    .mobile-topbar .mt-burger {
-      background: none; border: none; color: #fff; cursor: pointer;
-      display: flex; flex-direction: column; gap: 4px; padding: 6px;
-    }
-    .mobile-topbar .mt-burger span { width: 20px; height: 2px; background: #fff; border-radius: 2px; }
-    .mobile-topbar .mt-title { font-size: 14px; font-weight: 600; }
-
-    .sidebar-overlay-bg {
-      display: none;
-      position: fixed; inset: 0; background: rgba(0,0,0,0.45);
-      z-index: 99;
-    }
-    .sidebar-overlay-bg.open { display: block; }
-  }
-
   /* ---------- Mobilni telefon ---------- */
   @media (max-width: 640px) {
     body { padding: 10px 8px 50px; }
@@ -482,10 +455,10 @@
 <body>
 
 <div class="overlay open" id="loginOverlay" style="z-index:200; background:#0f1c2e; padding:0; align-items:stretch;">
-  <div class="login-wrap" style="display:flex; width:100%; min-height:100vh;">
+  <div style="display:flex; width:100%; min-height:100vh;">
 
     <!-- Lijeva strana — branding -->
-    <div class="login-branding" style="flex:1; background:linear-gradient(145deg,#0f1c2e 0%,#16243D 60%,#1a3558 100%); display:flex; flex-direction:column; align-items:center; justify-content:center; padding:48px; position:relative; overflow:hidden;">
+    <div style="flex:1; background:linear-gradient(145deg,#0f1c2e 0%,#16243D 60%,#1a3558 100%); display:flex; flex-direction:column; align-items:center; justify-content:center; padding:48px; position:relative; overflow:hidden;">
       <!-- Dekorativni krugovi u pozadini -->
       <div style="position:absolute;width:400px;height:400px;border-radius:50%;border:1px solid rgba(255,255,255,0.05);top:-100px;left:-100px;"></div>
       <div style="position:absolute;width:600px;height:600px;border-radius:50%;border:1px solid rgba(255,255,255,0.03);bottom:-200px;right:-200px;"></div>
@@ -500,7 +473,7 @@
         Sveobuhvatno poslovno rješenje za upravljanje kadrovima, finansijama i poslovnim procesima.
       </p>
 
-      <div class="login-modules-row" style="margin-top:48px; display:flex; gap:24px;">
+      <div style="margin-top:48px; display:flex; gap:24px;">
         <div style="text-align:center;">
           <div style="font-size:24px; font-weight:700; color:#6ea8fe;">👥</div>
           <div style="font-size:11px; color:rgba(255,255,255,0.4); margin-top:4px; text-transform:uppercase; letter-spacing:.08em;">Kadrovska</div>
@@ -515,11 +488,11 @@
         </div>
       </div>
 
-      <div class="login-copyright" style="position:absolute; bottom:24px; font-size:11px; color:rgba(255,255,255,0.25); letter-spacing:.08em;">© 2026 DND Solutions d.o.o. Banja Luka</div>
+      <div style="position:absolute; bottom:24px; font-size:11px; color:rgba(255,255,255,0.25); letter-spacing:.08em;">© 2026 DND Solutions d.o.o. Banja Luka</div>
     </div>
 
     <!-- Desna strana — forma -->
-    <div class="login-form-side" style="width:420px; min-width:320px; background:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:48px 40px;">
+    <div style="width:420px; min-width:320px; background:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:48px 40px;">
       <div style="width:100%; max-width:340px;">
         <div style="margin-bottom:32px;">
           <h2 style="font-family:Georgia,serif; font-size:26px; color:#16243D; margin:0 0 8px;">Dobrodošli</h2>
@@ -560,9 +533,19 @@
 <!-- Sidebar -->
 <nav id="sidebar">
   <div class="sidebar-logo">
-    <div class="eyebrow">DND Solutions</div>
-    <h1>Kadrovska</h1>
+    <div class="eyebrow" id="sidebarRoleLabel">DND Solutions</div>
+    <h1 id="sidebarModulH1" class="mod-kadrovska">Kadrovska</h1>
     <div id="firmaEyebrow" style="font-size:11px; color:rgba(255,255,255,0.5); margin-top:4px;"></div>
+    <div class="firma-dropdown-wrap" id="firmaDropdownWrap" style="display:none;">
+      <button class="firma-dropdown-btn" id="firmaDropdownBtn" type="button">
+        <span class="fdb-label" id="firmaDropdownLabel">Sve firme</span>
+        <span class="fdb-arrow">▼</span>
+      </button>
+      <div class="firma-dropdown-panel" id="firmaDropdownPanel">
+        <input class="firma-search-input" id="firmaSearchInput" type="text" placeholder="Pretraži firme...">
+        <div class="firma-list" id="firmaListItems"></div>
+      </div>
+    </div>
   </div>
   <div class="sidebar-user">
     <span>👤 <span id="sidebarUserName">-</span></span>
@@ -671,13 +654,6 @@
 
 <!-- Main content -->
 <div id="mainContent" style="display:none;">
-<div class="mobile-topbar">
-  <button class="mt-burger" id="mobileSidebarBtn" type="button" aria-label="Meni">
-    <span></span><span></span><span></span>
-  </button>
-  <span class="mt-title">DND Solutions — Kadrovska</span>
-</div>
-<div class="sidebar-overlay-bg" id="sidebarOverlayBg"></div>
 <div class="wrap" id="appWrap" style="display:block;">
   <div style="display:none;" id="oldNavToolbar"></div>
 
@@ -1887,9 +1863,11 @@ function toast(msg) {
 
 // ══ SUPABASE helpers ══════════════════════════════════════════════════════════
 async function sbGet(table) {
-  const { data, error } = await _supabase.from(table).select('*');
-  if (error) { console.error(table + ' error:', error.message || JSON.stringify(error)); return null; }
-  return data;
+  try {
+    const { data, error } = await _supabase.from(table).select('*');
+    if (error) { console.warn(table + ' sbGet warning:', error.message || table); return null; }
+    return data;
+  } catch(e) { console.warn('sbGet exception:', table, e && e.message); return null; }
 }
 async function sbUpsert(table, data) {
   const { error } = await _supabase.from(table).upsert(data, { onConflict: 'id' });
@@ -2062,34 +2040,38 @@ async function loadData() {
 
 async function loadUsers() {
   try {
-    const rows = await sbGet('users');
-    if (rows && rows.length) {
-      users = rows.map(r => ({
-        _db_id: r.id,
-        username: r.username,
-        name: r.name,
-        password: r.password,
-        role: r.role || 'korisnik',
-        firma_id: r.firma_id,
-        poslovnica_id: r.poslovnica_id,
-        permissions: r.permissions || defaultPermissions('puno'),
-        moduli: r.moduli || defaultModuli(),
-      }));
+    // Koristimo direktni fetch umjesto Supabase klijenta da izbjegnemo DataCloneError
+    const resp = await fetch(`https://qyucalgapguivrgnogbr.supabase.co/rest/v1/users?select=*`, {
+      headers: {
+        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF5dWNhbGdhcGd1aXZyZ25vZ2JyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3MjY3OTMsImV4cCI6MjA5NzMwMjc5M30.9i2TeockxwwzXRWEPHw7UfrQfdkgbLUeC2NAIDcE9S0',
+        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF5dWNhbGdhcGd1aXZyZ25vZ2JyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3MjY3OTMsImV4cCI6MjA5NzMwMjc5M30.9i2TeockxwwzXRWEPHw7UfrQfdkgbLUeC2NAIDcE9S0',
+        'Content-Type': 'application/json'
+      }
+    });
+    if (resp.ok) {
+      const rows = await resp.json();
+      if (rows && rows.length) {
+        users = rows.map(r => ({
+          _db_id: r.id,
+          username: r.username,
+          name: r.name,
+          password: r.password,
+          role: r.role || 'korisnik',
+          firma_id: r.firma_id,
+          poslovnica_id: r.poslovnica_id,
+          permissions: r.permissions || defaultPermissions('puno'),
+          moduli: r.moduli || defaultModuli(),
+        }));
+      } else {
+        users = JSON.parse(JSON.stringify(USERS_SEED));
+        await saveUsers();
+      }
     } else {
-      // Pokušaj localStorage pa seed
-      const local = localStorage.getItem('users');
-      users = local ? JSON.parse(local) : JSON.parse(JSON.stringify(USERS_SEED));
-      await saveUsers();
+      throw new Error('fetch users failed: ' + resp.status);
     }
   } catch(e) {
-    console.error('loadUsers error:', e && e.message);
-    // Fallback na localStorage
-    try {
-      const local = localStorage.getItem('users');
-      users = local ? JSON.parse(local) : JSON.parse(JSON.stringify(USERS_SEED));
-    } catch(e2) {
-      users = JSON.parse(JSON.stringify(USERS_SEED));
-    }
+    console.warn('loadUsers fallback:', e && e.message);
+    users = JSON.parse(JSON.stringify(USERS_SEED));
   }
   users.forEach(u => {
     if (!u.permissions) u.permissions = defaultPermissions('puno');
@@ -2100,21 +2082,33 @@ async function loadUsers() {
 
 // ══ SAVE ══════════════════════════════════════════════════════════════════════
 async function saveUsers() {
-  // Backup u localStorage uvijek
-  try { localStorage.setItem('users', JSON.stringify(users)); } catch(e) {}
+  const SURL = 'https://qyucalgapguivrgnogbr.supabase.co/rest/v1/users';
+  const HEADERS = {
+    'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF5dWNhbGdhcGd1aXZyZ25vZ2JyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3MjY3OTMsImV4cCI6MjA5NzMwMjc5M30.9i2TeockxwwzXRWEPHw7UfrQfdkgbLUeC2NAIDcE9S0',
+    'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF5dWNhbGdhcGd1aXZyZ25vZ2JyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3MjY3OTMsImV4cCI6MjA5NzMwMjc5M30.9i2TeockxwwzXRWEPHw7UfrQfdkgbLUeC2NAIDcE9S0',
+    'Content-Type': 'application/json',
+    'Prefer': 'return=representation'
+  };
   try {
     for (const u of users) {
       const row = { username: u.username, name: u.name, password: u.password, role: u.role,
         firma_id: u.firma_id || null, poslovnica_id: u.poslovnica_id || null,
         permissions: u.permissions, moduli: u.moduli };
       if (u._db_id) {
-        await _supabase.from('users').update(row).eq('id', u._db_id);
+        await fetch(`${SURL}?id=eq.${u._db_id}`, {
+          method: 'PATCH', headers: HEADERS, body: JSON.stringify(row)
+        });
       } else {
-        const { data } = await _supabase.from('users').insert(row).select();
-        if (data && data[0]) u._db_id = data[0].id;
+        const res = await fetch(SURL, {
+          method: 'POST', headers: HEADERS, body: JSON.stringify(row)
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data[0]) u._db_id = data[0].id;
+        }
       }
     }
-  } catch(e) { console.error('saveUsers:', e && e.message); }
+  } catch(e) { console.warn('saveUsers:', e && e.message); }
 }
 
 async function saveCodes() {
@@ -2543,6 +2537,12 @@ function render() {
 
   const filtered = employees.filter(e => {
     if (allowedPoslovnice !== null && !allowedPoslovnice.includes(e.Restoran)) return false;
+    // Filter po izabranoj firmi (samo za admin)
+    if (aktivnaFirmaFilter !== null) {
+      const poslovniceFilm = (typeof poslovnice !== 'undefined' ? poslovnice : [])
+        .filter(p => p.firma_id === aktivnaFirmaFilter).map(p => p.naziv);
+      if (!poslovniceFilm.includes(e.Restoran)) return false;
+    }
     if (search && !(e.Ime_i_prezime || '').toLowerCase().includes(search)) return false;
     if (fRestoran && e.Restoran !== fRestoran) return false;
     if (fTip && e.Tip_ugovora !== fTip) return false;
@@ -5869,12 +5869,13 @@ function updateSidebar() {
   const nameEl = document.getElementById('sidebarUserName');
   if (nameEl) nameEl.textContent = u ? (u.name || u.username) : '-';
 
-  // Firma naziv
+  // Firma dropdown ili eyebrow - inicijalizira se u initFirmaDropdown()
   const firmaEl = document.getElementById('firmaEyebrow');
-  if (firmaEl) {
+  if (firmaEl && !(isGlavniAdmin() || isFirmaAdmin())) {
     const allowedIds = accessibleFirmaIds();
     const visible = allowedIds === null ? firme : firme.filter(f => allowedIds.includes(f.id));
     firmaEl.textContent = visible.map(f => f.naziv).join(' · ') || '';
+    firmaEl.style.display = '';
   }
 
   // Prava pristupa - sakrivanje stavki
@@ -5901,27 +5902,91 @@ function updateSidebar() {
 }
 
 // Odjava iz sidebara
-document.getElementById('sidebarLogoutBtn').addEventListener('click', () => doLogout('manual'));
+// ── Firma dropdown za admin/super_admin ────────────────────────────────
+let aktivnaFirmaFilter = null; // null = sve firme
 
-// ── Mobilni sidebar toggle ──────────────────────────────────────────────
-function openMobileSidebar() {
-  document.getElementById('sidebar').classList.add('mobile-open');
-  document.getElementById('sidebarOverlayBg').classList.add('open');
-}
-function closeMobileSidebar() {
-  document.getElementById('sidebar').classList.remove('mobile-open');
-  document.getElementById('sidebarOverlayBg').classList.remove('open');
-}
-const _mobileSidebarBtn = document.getElementById('mobileSidebarBtn');
-if (_mobileSidebarBtn) _mobileSidebarBtn.addEventListener('click', openMobileSidebar);
-const _sidebarOverlayBg = document.getElementById('sidebarOverlayBg');
-if (_sidebarOverlayBg) _sidebarOverlayBg.addEventListener('click', closeMobileSidebar);
-document.getElementById('sidebar').addEventListener('click', (e) => {
-  if (window.innerWidth <= 900 && (e.target.closest('.sidebar-item') || e.target.closest('.sidebar-logout'))) {
-    closeMobileSidebar();
+function initFirmaDropdown() {
+  const isAdminUser = isGlavniAdmin() || isFirmaAdmin();
+  const wrap = document.getElementById('firmaDropdownWrap');
+  const eyebrow = document.getElementById('firmaEyebrow');
+  const roleLabel = document.getElementById('sidebarRoleLabel');
+
+  // Ažuriraj role label u eyebrow
+  if (roleLabel) {
+    if (isGlavniAdmin()) roleLabel.textContent = 'Super Administrator';
+    else if (isFirmaAdmin()) roleLabel.textContent = 'Administrator';
+    else roleLabel.textContent = 'DND Solutions';
   }
-});
+
+  if (!isAdminUser) {
+    // Obični korisnik — samo prikaži naziv firme
+    if (wrap) wrap.style.display = 'none';
+    if (eyebrow && currentSessionUser && currentSessionUser.firma_id) {
+      const firma = firme.find(f => f.id === currentSessionUser.firma_id);
+      if (eyebrow) eyebrow.textContent = firma ? firma.naziv : '';
+    }
+    return;
+  }
+
+  // Admin — sakrij eyebrow, prikaži dropdown
+  if (eyebrow) eyebrow.style.display = 'none';
+  if (wrap) wrap.style.display = '';
+
+  renderFirmaList('');
+
+  // Toggle panel
+  document.getElementById('firmaDropdownBtn').onclick = (e) => {
+    e.stopPropagation();
+    const panel = document.getElementById('firmaDropdownPanel');
+    panel.classList.toggle('open');
+    if (panel.classList.contains('open')) {
+      document.getElementById('firmaSearchInput').focus();
+      document.getElementById('firmaSearchInput').value = '';
+      renderFirmaList('');
+    }
+  };
+
+  // Search
+  document.getElementById('firmaSearchInput').oninput = (e) => {
+    renderFirmaList(e.target.value.toLowerCase());
+  };
+
+  // Zatvori na klik van
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#firmaDropdownWrap')) {
+      const panel = document.getElementById('firmaDropdownPanel');
+      if (panel) panel.classList.remove('open');
+    }
+  });
+}
+
+function renderFirmaList(search) {
+  const list = document.getElementById('firmaListItems');
+  if (!list) return;
+  const sve = [{ id: null, naziv: 'Sve firme' }, ...firme];
+  const filtered = sve.filter(f => !search || f.naziv.toLowerCase().includes(search));
+  list.innerHTML = filtered.map(f => `
+    <div class="firma-list-item ${f.id === null ? 'all-firme' : ''} ${aktivnaFirmaFilter === f.id ? 'active' : ''}"
+         onclick="selectFirmaFilter(${JSON.stringify(f.id)})">
+      ${f.naziv}
+    </div>
+  `).join('');
+}
+
+function selectFirmaFilter(firmaId) {
+  aktivnaFirmaFilter = firmaId;
+  const firma = firmaId === null ? null : firme.find(f => f.id === firmaId);
+  document.getElementById('firmaDropdownLabel').textContent = firma ? firma.naziv : 'Sve firme';
+  document.getElementById('firmaDropdownPanel').classList.remove('open');
+  renderFirmaList('');
+  // Filtriraj podatke u aktivnom modulu
+  if (aktivniModul === 'kadrovska' || !aktivniModul) {
+    render(); // osvježi tabelu zaposlenika
+  }
+}
 // ──────────────────────────────────────────────────────────────────────
+
+document.getElementById('sidebarLogoutBtn').addEventListener('click', () => doLogout('manual'));
 
 // Hamburger dugme (ako postoji) - više se ne koristi ali ne brisati radi eventListenera
 // hamburgerBtn je uklonjen iz DOM-a
@@ -5947,6 +6012,7 @@ async function attemptLogin() {
   document.getElementById('appWrap').style.display = '';
   updateRoleUI();
   updateSidebar();
+  initFirmaDropdown();
   resetInactivityTimer();
   await loadData();
 }
@@ -5976,7 +6042,7 @@ function switchModule(modul) {
     const el = document.getElementById('modul_' + m);
     if (el) el.style.display = 'none';
   });
-  // Prikaži odabrani (kadrovska = appWrap, ostali = vlastiti div)
+  // Prikaži odabrani
   if (modul === 'kadrovska') {
     $('appWrap').style.display = '';
   } else {
@@ -5991,7 +6057,14 @@ function switchModule(modul) {
     const btn = document.getElementById('modBtn_' + m);
     if (btn) btn.classList.toggle('active', m === modul);
   });
-  // Ažuriraj sidebar stavke - sakrij nerel. kad nije kadrovska
+  // Ažuriraj sidebar H1 naziv i boju
+  const modulNazivi = { kadrovska: 'Kadrovska', obracun: 'Obračun', troskovi: 'Troškovi' };
+  const h1 = document.getElementById('sidebarModulH1');
+  if (h1) {
+    h1.textContent = modulNazivi[modul] || modul;
+    h1.className = 'mod-' + modul;
+  }
+  // Ažuriraj sidebar stavke
   const isKadrovska = modul === 'kadrovska';
   ['sb_zaposleni','sb_radnaMjesta','sb_odjeli','sb_tipUgovora','sb_strucnaSprema',
    'sb_praznici','sb_firme','sb_komitenti','sb_goPodesavanja',
