@@ -2740,7 +2740,7 @@ function render() {
     cb.className = 'row-cb';
     cb.dataset.idx = realIndex;
     cb.style.cursor = 'pointer';
-    cb.addEventListener('change', updateCheckAllState);
+    cb.addEventListener('change', updatePrintSelection);
     tdCb.appendChild(cb);
     tr.appendChild(tdCb);
 
