@@ -798,7 +798,7 @@
 
   <div class="toolbar">
     <input type="search" id="search" placeholder="Pretraga po imenu...">
-    <select id="filterRestoran">
+    <select id="filterPoslovnica">
       <option value="">Sve poslovnice</option>
     </select>
     <select id="filterTip">
@@ -992,9 +992,9 @@
             <label>Firma <span style="color:red">*</span></label>
             <select id="f_Firma"></select>
           </div>
-          <div class="field" id="f_RestoranWrap" style="display:none;">
+          <div class="field" id="f_PoslovnicaWrap" style="display:none;">
             <label>Poslovnica <span class="opt">(opcionalno)</span></label>
-            <select id="f_Restoran"></select>
+            <select id="f_Poslovnica"></select>
           </div>
           <div class="field">
             <label>Odjel</label>
@@ -1082,14 +1082,14 @@
     </div>
     <div class="modal-body">
     <div class="toolbar" style="margin:8px 0;">
-      <select id="reportRestoran">
+      <select id="reportPoslovnica">
         <option value="">Sve poslovnice</option>
       </select>
       <select id="reportGroupBy">
         <option value="Radno_mjesto">Grupiši po radnom mjestu</option>
         <option value="Odjel">Grupiši po odjelu</option>
         <option value="Tip_ugovora">Grupiši po tipu ugovora</option>
-        <option value="Restoran">Grupiši po poslovnici</option>
+        <option value="Poslovnica">Grupiši po poslovnici</option>
       </select>
       <div class="spacer"></div>
       <button type="button" class="ghost small" id="reportExportBtn">Izvezi izvještaj u Excel</button>
@@ -1292,7 +1292,7 @@
     <div class="toolbar" style="margin:8px 0; flex-wrap:wrap;">
       <select id="sihMjesec"></select>
       <input type="number" id="sihGodina" style="width:90px;" placeholder="Godina">
-      <select id="sihRestoranFilter"><option value="">Sve poslovnice</option></select>
+      <select id="sihPoslovnicaFilter"><option value="">Sve poslovnice</option></select>
       <select id="sihRadnoMjestoFilter"><option value="">Sva radna mjesta</option></select>
       <div class="spacer"></div>
       <button type="button" class="secondary" id="sihGenerisiBtn">Generiši/Ažuriraj</button>
@@ -1626,7 +1626,7 @@ window.storage = window.storage || {
         Zavrsena_skola: r.zavrsena_skola || '',
         Strucni_naziv: r.strucni_naziv || '',
         Radno_mjesto: r.radno_mjesto || '',
-        Odjel: r.odjel || '', Restoran: r.restoran || '',
+        Odjel: r.odjel || '', Poslovnica: r.poslovnica || '',
         Naziv_poslodavca: r.naziv_poslodavca || '',
         Adresa_poslodavca: r.adresa_poslodavca || '',
         JIB_poslodavca: r.jib_poslodavca || '',
@@ -1668,7 +1668,7 @@ window.storage = window.storage || {
           zavrsena_skola: e.Zavrsena_skola || '',
           strucni_naziv: e.Strucni_naziv || '',
           radno_mjesto: e.Radno_mjesto || '',
-          odjel: e.Odjel || '', restoran: e.Restoran || '',
+          odjel: e.Odjel || '', poslovnica: e.Poslovnica || '',
           naziv_poslodavca: e.Naziv_poslodavca || '',
           adresa_poslodavca: e.Adresa_poslodavca || '',
           jib_poslodavca: e.JIB_poslodavca || '',
@@ -1726,7 +1726,7 @@ const FIELD_ORDER = [
   'Redni_broj','Ime','Prezime','Ime_i_prezime','Ime_roditelja','Datum_rodjenja','JMBG',
   'Adresa','Mjesto_stanovanja','Strucna_sprema','Zavrsena_skola','Strucni_naziv',
   'Radno_mjesto','Odjel',
-  'Restoran','Naziv_poslodavca','Adresa_poslodavca','JIB_poslodavca','Zastupnik_poslodavca',
+  'Poslovnica','Naziv_poslodavca','Adresa_poslodavca','JIB_poslodavca','Zastupnik_poslodavca',
   'Tip_ugovora','Datum_stupanja_na_rad','Datum_prestanka_ugovora','Radno_vrijeme',
   'Neto_plata','Bruto_plata','Mjesto_zakljucenja','Datum_zakljucenja',
   'GO_broj_dana','GO_prvi_dio_dana','GO_datum_od','GO_datum_do','GO_datum_javljanja','GO_datum_izrade'
@@ -1877,7 +1877,7 @@ const FIELD_LABELS = {
   Adresa: 'Adresa', Mjesto_stanovanja: 'Mjesto stanovanja',
   Strucna_sprema: 'Stručna sprema', Zavrsena_skola: 'Završena škola',
   Strucni_naziv: 'Stručni/naučni naziv',
-  Radno_mjesto: 'Radno mjesto', Odjel: 'Odjel', Restoran: 'Poslovnica',
+  Radno_mjesto: 'Radno mjesto', Odjel: 'Odjel', Poslovnica: 'Poslovnica',
   Naziv_poslodavca: 'Naziv poslodavca', Adresa_poslodavca: 'Adresa poslodavca',
   JIB_poslodavca: 'JIB poslodavca', Zastupnik_poslodavca: 'Zastupnik poslodavca',
   Tip_ugovora: 'Tip ugovora', Datum_stupanja_na_rad: 'Datum stupanja na rad',
@@ -2034,7 +2034,7 @@ async function loadData() {
         Zavrsena_skola: r.zavrsena_skola || '',
         Strucni_naziv: r.strucni_naziv || '',
         Radno_mjesto: r.radno_mjesto || '',
-        Odjel: r.odjel || '', Restoran: r.restoran || '',
+        Odjel: r.odjel || '', Poslovnica: r.poslovnica || '',
         Naziv_poslodavca: r.naziv_poslodavca || '',
         Adresa_poslodavca: r.adresa_poslodavca || '',
         JIB_poslodavca: r.jib_poslodavca || '',
@@ -2373,7 +2373,7 @@ function resolveFirmaZaPoslodavca() {
     if (f) return f;
   }
   // Fallback: po poslovnici
-  const r = $('f_Restoran') ? $('f_Restoran').value : '';
+  const r = $('f_Poslovnica') ? $('f_Poslovnica').value : '';
   const fromPoslovnica = getFirmaForPoslovnica(r);
   if (fromPoslovnica) return fromPoslovnica;
   const allowedFirmaIds = accessibleFirmaIds();
@@ -2520,8 +2520,8 @@ function populateFormSelects(emp) {
     firmaEl.appendChild(opt);
   });
   // Postavi trenutnu vrijednost
-  const currentFirma = emp.Restoran
-    ? (firme.find(f => poslovnice.some(p => p.firma_id === f.id && p.naziv === emp.Restoran))?.naziv || emp.Restoran)
+  const currentFirma = emp.Poslovnica
+    ? (firme.find(f => poslovnice.some(p => p.firma_id === f.id && p.naziv === emp.Poslovnica))?.naziv || emp.Poslovnica)
     : (dostupneFirme[0]?.naziv || '');
   firmaEl.value = currentFirma;
 
@@ -2531,15 +2531,15 @@ function populateFormSelects(emp) {
     const firmaPoslovnice = firma ? poslovnice.filter(p => p.firma_id === firma.id) : [];
     if (firmaPoslovnice.length > 0) {
       const poslovnicaNazivi = firmaPoslovnice.map(p => p.naziv);
-      populateSelect($('f_Restoran'), poslovnicaNazivi, currentPoslovnica || poslovnicaNazivi[0], false);
-      $('f_RestoranWrap').style.display = '';
+      populateSelect($('f_Poslovnica'), poslovnicaNazivi, currentPoslovnica || poslovnicaNazivi[0], false);
+      $('f_PoslovnicaWrap').style.display = '';
     } else {
-      $('f_Restoran').innerHTML = '';
-      $('f_RestoranWrap').style.display = 'none';
+      $('f_Poslovnica').innerHTML = '';
+      $('f_PoslovnicaWrap').style.display = 'none';
     }
   }
 
-  const currentPoslovnica = emp.Restoran && firme.some(f => f.naziv === emp.Restoran) ? '' : emp.Restoran;
+  const currentPoslovnica = emp.Poslovnica && firme.some(f => f.naziv === emp.Poslovnica) ? '' : emp.Poslovnica;
   updatePoslovnicaDropdown(currentFirma, currentPoslovnica);
 
   // Kad se promijeni firma, ažuriraj poslovnice i poslodavca
@@ -2573,7 +2573,7 @@ async function saveEmployee(emp) {
       zavrsena_skola: emp.Zavrsena_skola || '',
       strucni_naziv: emp.Strucni_naziv || '',
       radno_mjesto: emp.Radno_mjesto || '',
-      odjel: emp.Odjel || '', restoran: emp.Restoran || '',
+      odjel: emp.Odjel || '', poslovnica: emp.Poslovnica || '',
       naziv_poslodavca: emp.Naziv_poslodavca || '',
       adresa_poslodavca: emp.Adresa_poslodavca || '',
       jib_poslodavca: emp.JIB_poslodavca || '',
@@ -2655,9 +2655,9 @@ function renumber() {
   const counts = {};
   employees.forEach(e => {
     // Nađi firmu kroz poslovnicu
-    const restoran = (e.Restoran || '').trim();
-    const posl = poslovnice.find(p => p.naziv.toUpperCase() === restoran.toUpperCase());
-    const firmaId = posl ? posl.firma_id : (restoran || 'default');
+    const poslovnica = (e.Poslovnica || '').trim();
+    const posl = poslovnice.find(p => p.naziv.toUpperCase() === poslovnica.toUpperCase());
+    const firmaId = posl ? posl.firma_id : (poslovnica || 'default');
     if (!counts[firmaId]) counts[firmaId] = 0;
     counts[firmaId]++;
     e.Redni_broj = String(counts[firmaId]);
@@ -2683,8 +2683,8 @@ function jeNeaktivan(emp) {
   return d < today;
 }
 
-function populateRestoranFilter() {
-  const sel = $('filterRestoran');
+function populatePoslovnicaFilter() {
+  const sel = $('filterPoslovnica');
   const current = sel.value;
   const allowed = accessiblePoslovnicaNazivi();
   const opts = allowed === null ? poslovnice : poslovnice.filter(p => allowed.includes(p.naziv));
@@ -2696,17 +2696,17 @@ function populateRestoranFilter() {
 function render() {
   updateFirmaEyebrow();
   populateTipFilter();
-  populateRestoranFilter();
+  populatePoslovnicaFilter();
   $('addBtn').style.display = canAdd('zaposleni') ? '' : 'none';
   const search = $('search').value.trim().toLowerCase();
-  const fRestoran = $('filterRestoran').value;
+  const fPoslovnica = $('filterPoslovnica').value;
   const fTip = $('filterTip').value;
   const samoAktivni = $('filterSamoAktivni').checked;
 
   const allowedPoslovnice = accessiblePoslovnicaNazivi();
 
   const filtered = employees.filter(e => {
-    if (allowedPoslovnice !== null && !allowedPoslovnice.includes(e.Restoran)) return false;
+    if (allowedPoslovnice !== null && !allowedPoslovnice.includes(e.Poslovnica)) return false;
     // Filter po izabranoj firmi (samo za admin)
     if (aktivnaFirmaFilter !== null) {
       const poslovniceFilm = (typeof poslovnice !== 'undefined' ? poslovnice : [])
@@ -2714,11 +2714,11 @@ function render() {
       if (poslovniceFilm.length === 0) {
         // Firma nema poslovnica - koristi naziv firme kao identifikator
         const firmaNaziv = (firme.find(f => f.id === aktivnaFirmaFilter) || {}).naziv;
-        if (e.Restoran !== firmaNaziv) return false;
-      } else if (!poslovniceFilm.includes(e.Restoran)) return false;
+        if (e.Poslovnica !== firmaNaziv) return false;
+      } else if (!poslovniceFilm.includes(e.Poslovnica)) return false;
     }
     if (search && !(e.Ime_i_prezime || '').toLowerCase().includes(search)) return false;
-    if (fRestoran && e.Restoran !== fRestoran) return false;
+    if (fPoslovnica && e.Poslovnica !== fPoslovnica) return false;
     if (fTip && e.Tip_ugovora !== fTip) return false;
     if (samoAktivni && jeNeaktivan(e)) return false;
     return true;
@@ -2729,7 +2729,7 @@ function render() {
   $('emptyState').style.display = filtered.length ? 'none' : 'block';
   const accessibleTotal = allowedPoslovnice === null
     ? employees.length
-    : employees.filter(e => allowedPoslovnice.includes(e.Restoran)).length;
+    : employees.filter(e => allowedPoslovnice.includes(e.Poslovnica)).length;
   $('countInfo').textContent = `Prikazano ${filtered.length} od ${accessibleTotal} zaposlenih`;
 
   filtered.forEach((emp) => {
@@ -2758,7 +2758,7 @@ function render() {
     tr.appendChild(tdName);
 
     const tdRest = document.createElement('td');
-    tdRest.innerHTML = `<span class="badge">${emp.Restoran || ''}</span>`;
+    tdRest.innerHTML = `<span class="badge">${emp.Poslovnica || ''}</span>`;
     tr.appendChild(tdRest);
 
     const tdRm = document.createElement('td');
@@ -2836,7 +2836,7 @@ function renderEmployeeCard(index) {
     <div class="section">
       <h3>Radni podaci</h3>
       ${cardRow('Status', status)}
-      ${cardRow('Poslovnica', emp.Restoran)}
+      ${cardRow('Poslovnica', emp.Poslovnica)}
       ${cardRow('Odjel', emp.Odjel)}
       ${cardRow('Radno mjesto', emp.Radno_mjesto)}
       ${cardRow('Tip ugovora', emp.Tip_ugovora)}
@@ -3029,7 +3029,7 @@ $('printSelectedBtn').addEventListener('click', () => {
       '<tr><td>Adresa</td><td>' + (emp.Adresa || '') + ', ' + (emp.Mjesto_stanovanja || '') + '</td></tr>' +
       '<tr><td>Radno mjesto</td><td>' + (emp.Radno_mjesto || '') + '</td></tr>' +
       '<tr><td>Odjel</td><td>' + (emp.Odjel || '') + '</td></tr>' +
-      '<tr><td>Poslovnica</td><td>' + (emp.Restoran || '') + '</td></tr>' +
+      '<tr><td>Poslovnica</td><td>' + (emp.Poslovnica || '') + '</td></tr>' +
       '<tr><td>Tip ugovora</td><td>' + (emp.Tip_ugovora || '') + '</td></tr>' +
       '<tr><td>Datum stupanja</td><td>' + (emp.Datum_stupanja_na_rad || '') + '</td></tr>' +
       '<tr><td>Datum prestanka</td><td>' + (emp.Datum_prestanka_ugovora || '') + '</td></tr>' +
@@ -3053,7 +3053,7 @@ $('printSelectedBtn').addEventListener('click', () => {
   setTimeout(function() { w.print(); }, 500);
 });$('cancelBtn').addEventListener('click', closeModal);
 $('overlay').addEventListener('click', (e) => { if (e.target.id === 'overlay') closeModal(); });
-$('f_Restoran').addEventListener('change', fillPoslodavac);
+$('f_Poslovnica').addEventListener('change', fillPoslodavac);
 $('f_Tip_ugovora').addEventListener('change', autoRadnoVrijeme);
 
 $('deleteBtn').addEventListener('click', async () => {
@@ -3083,12 +3083,12 @@ $('empForm').addEventListener('submit', async (e) => {
   });
   emp.Ime_i_prezime = `${ime} ${prezime}`.trim();
 
-  // Restoran = poslovnica (ako postoji) ili firma (ako nema poslovnica)
+  // Poslovnica = poslovnica (ako postoji) ili firma (ako nema poslovnica)
   const firmaEl = $('f_Firma');
-  const poslovnicaEl = $('f_Restoran');
+  const poslovnicaEl = $('f_Poslovnica');
   const firmaNaziv = firmaEl ? firmaEl.value.trim() : '';
-  const poslovnicaNaziv = poslovnicaEl && $('f_RestoranWrap').style.display !== 'none' ? poslovnicaEl.value.trim() : '';
-  emp.Restoran = poslovnicaNaziv || firmaNaziv;
+  const poslovnicaNaziv = poslovnicaEl && $('f_PoslovnicaWrap').style.display !== 'none' ? poslovnicaEl.value.trim() : '';
+  emp.Poslovnica = poslovnicaNaziv || firmaNaziv;
 
   // ── JMBG duplikat provjera ──────────────────────────────
   const jmbg = (emp.JMBG || '').trim();
@@ -3129,7 +3129,7 @@ $('empForm').addEventListener('submit', async (e) => {
 
 // ---------- Filters ----------
 $('search').addEventListener('input', render);
-$('filterRestoran').addEventListener('change', render);
+$('filterPoslovnica').addEventListener('change', render);
 $('filterTip').addEventListener('change', render);
 $('filterSamoAktivni').addEventListener('change', render);
 
@@ -3383,7 +3383,7 @@ const GROUP_LABELS = {
   Radno_mjesto: 'Radno mjesto',
   Odjel: 'Odjel',
   Tip_ugovora: 'Tip ugovora',
-  Restoran: 'Poslovnica'
+  Poslovnica: 'Poslovnica'
 };
 
 function parseNum(val) {
@@ -3398,8 +3398,8 @@ function fmtMoney(n) {
   return n.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-function populateReportRestoranFilter() {
-  const sel = $('reportRestoran');
+function populateReportPoslovnicaFilter() {
+  const sel = $('reportPoslovnica');
   const current = sel.value;
   const allowed = accessiblePoslovnicaNazivi();
   const opts = allowed === null ? poslovnice : poslovnice.filter(p => allowed.includes(p.naziv));
@@ -3409,15 +3409,15 @@ function populateReportRestoranFilter() {
 }
 
 function renderReports() {
-  populateReportRestoranFilter();
-  const restoranFilter = $('reportRestoran').value;
+  populateReportPoslovnicaFilter();
+  const poslovnicaFilter = $('reportPoslovnica').value;
   const groupField = $('reportGroupBy').value;
   $('reportGroupHeader').textContent = GROUP_LABELS[groupField] || groupField;
 
   const filtered = employees.filter(e => {
     const allowed = accessiblePoslovnicaNazivi();
-    if (allowed !== null && !allowed.includes(e.Restoran)) return false;
-    return !restoranFilter || e.Restoran === restoranFilter;
+    if (allowed !== null && !allowed.includes(e.Poslovnica)) return false;
+    return !poslovnicaFilter || e.Poslovnica === poslovnicaFilter;
   });
 
   const groups = new Map();
@@ -3492,16 +3492,16 @@ $('reportsBtn').addEventListener('click', () => {
 });
 $('reportsCloseBtn').addEventListener('click', () => $('reportsOverlay').classList.remove('open'));
 $('reportsOverlay').addEventListener('click', (e) => { if (e.target.id === 'reportsOverlay') $('reportsOverlay').classList.remove('open'); });
-$('reportRestoran').addEventListener('change', renderReports);
+$('reportPoslovnica').addEventListener('change', renderReports);
 $('reportGroupBy').addEventListener('change', renderReports);
 
 $('reportExportBtn').addEventListener('click', () => {
-  const restoranFilter = $('reportRestoran').value;
+  const poslovnicaFilter = $('reportPoslovnica').value;
   const groupField = $('reportGroupBy').value;
   const filtered = employees.filter(e => {
     const allowed = accessiblePoslovnicaNazivi();
-    if (allowed !== null && !allowed.includes(e.Restoran)) return false;
-    return !restoranFilter || e.Restoran === restoranFilter;
+    if (allowed !== null && !allowed.includes(e.Poslovnica)) return false;
+    return !poslovnicaFilter || e.Poslovnica === poslovnicaFilter;
   });
 
   const groups = new Map();
@@ -3528,7 +3528,7 @@ $('reportExportBtn').addEventListener('click', () => {
   const ws = XLSX.utils.json_to_sheet(rows);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Izvjestaj');
-  const suffix = restoranFilter ? `_${restoranFilter}` : '';
+  const suffix = poslovnicaFilter ? `_${poslovnicaFilter}` : '';
   XLSX.writeFile(wb, `Izvjestaj_${groupField}${suffix}.xlsx`);
   toast('Izvještaj izvezen u Excel.');
 });
@@ -4512,7 +4512,7 @@ function renderFirmeModal() {
       del.textContent = '\u00d7';
       del.title = 'Obriši';
       del.addEventListener('click', async () => {
-        const inUse = employees.filter(e => e.Restoran === p.naziv);
+        const inUse = employees.filter(e => e.Poslovnica === p.naziv);
         if (inUse.length) {
           toast(`Nije moguće obrisati - ${inUse.length} zaposlenih je vezano za ovu poslovnicu.`);
           return;
@@ -4770,7 +4770,7 @@ function accessibleEmployeesList() {
   const allowed = accessiblePoslovnicaNazivi();
   return employees
     .map((emp, idx) => ({ emp, idx }))
-    .filter(x => allowed === null || allowed.includes(x.emp.Restoran));
+    .filter(x => allowed === null || allowed.includes(x.emp.Poslovnica));
 }
 
 function populateGoEmployeeSelect() {
@@ -4778,7 +4778,7 @@ function populateGoEmployeeSelect() {
   const current = sel.value;
   const list = accessibleEmployeesList();
   sel.innerHTML = '<option value="">Izaberi zaposlenog...</option>' +
-    list.map(x => `<option value="${x.idx}">${x.emp.Ime_i_prezime || '(bez imena)'} \u2013 ${x.emp.Restoran || ''}</option>`).join('');
+    list.map(x => `<option value="${x.idx}">${x.emp.Ime_i_prezime || '(bez imena)'} \u2013 ${x.emp.Poslovnica || ''}</option>`).join('');
   if (current && list.some(x => String(x.idx) === current)) {
     sel.value = current;
   } else if (goSelectedEmpIndex !== null) {
@@ -4963,7 +4963,7 @@ function jePraznik(d, firmaId) {
 // Vraća firma_id za zaposlenog (preko njegove poslovnice, ili direktno ako firma
 // nema poslovnica) - koristi se da se zna čiji šifarnik praznika primijeniti.
 function firmaIdZaZaposlenog(emp) {
-  const f = getFirmaForPoslovnica(emp.Restoran);
+  const f = getFirmaForPoslovnica(emp.Poslovnica);
   if (f) return f.id;
   const allowedFirmaIds = accessibleFirmaIds();
   const candidateFirme = allowedFirmaIds === null ? firme : firme.filter(x => allowedFirmaIds.includes(x.id));
@@ -5524,11 +5524,11 @@ function populateSihFilters() {
   }
 
   const allowed = accessiblePoslovnicaNazivi();
-  const restoraniSet = new Set(employees.filter(e => allowed === null || allowed.includes(e.Restoran)).map(e => e.Restoran).filter(Boolean));
-  const restoranSel = $('sihRestoranFilter');
-  const curR = restoranSel.value;
-  restoranSel.innerHTML = '<option value="">Sve poslovnice</option>' + [...restoraniSet].map(r => `<option value="${r}">${r}</option>`).join('');
-  restoranSel.value = curR;
+  const poslovniceSet = new Set(employees.filter(e => allowed === null || allowed.includes(e.Poslovnica)).map(e => e.Poslovnica).filter(Boolean));
+  const poslovnicaSel = $('sihPoslovnicaFilter');
+  const curR = poslovnicaSel.value;
+  poslovnicaSel.innerHTML = '<option value="">Sve poslovnice</option>' + [...poslovniceSet].map(r => `<option value="${r}">${r}</option>`).join('');
+  poslovnicaSel.value = curR;
 
   const rmSel = $('sihRadnoMjestoFilter');
   const curRm = rmSel.value;
@@ -5541,12 +5541,12 @@ function populateSihFilters() {
 
 function sihFilteredEmployees() {
   const allowed = accessiblePoslovnicaNazivi();
-  const fRestoran = $('sihRestoranFilter').value;
+  const fPoslovnica = $('sihPoslovnicaFilter').value;
   const fRm = $('sihRadnoMjestoFilter').value;
   return employees
     .map((emp, idx) => ({ emp, idx }))
-    .filter(x => allowed === null || allowed.includes(x.emp.Restoran))
-    .filter(x => !fRestoran || x.emp.Restoran === fRestoran)
+    .filter(x => allowed === null || allowed.includes(x.emp.Poslovnica))
+    .filter(x => !fPoslovnica || x.emp.Poslovnica === fPoslovnica)
     .filter(x => !fRm || x.emp.Radno_mjesto === fRm);
 }
 
@@ -5656,7 +5656,7 @@ $('sihtericaBtn').addEventListener('click', () => {
 $('sihtericaCloseBtn').addEventListener('click', () => $('sihtericaOverlay').classList.remove('open'));
 $('sihtericaOverlay').addEventListener('click', (e) => { if (e.target.id === 'sihtericaOverlay') $('sihtericaOverlay').classList.remove('open'); });
 
-$('sihRestoranFilter').addEventListener('change', () => { populateSihEmployeeSelect(); renderSihtericaTable(); });
+$('sihPoslovnicaFilter').addEventListener('change', () => { populateSihEmployeeSelect(); renderSihtericaTable(); });
 $('sihRadnoMjestoFilter').addEventListener('change', () => { populateSihEmployeeSelect(); renderSihtericaTable(); });
 $('sihEmployeeSelect').addEventListener('change', () => {
   sihSelectedEmpIndex = $('sihEmployeeSelect').value !== '' ? parseInt($('sihEmployeeSelect').value, 10) : null;
@@ -5814,7 +5814,7 @@ function renderExpiryModal() {
   const allowed = accessiblePoslovnicaNazivi();
   const list = employees
     .map((emp, idx) => ({ emp, idx }))
-    .filter(x => allowed === null || allowed.includes(x.emp.Restoran))
+    .filter(x => allowed === null || allowed.includes(x.emp.Poslovnica))
     .filter(x => parseDMY(x.emp.Datum_prestanka_ugovora))
     .sort((a, b) => parseDMY(a.emp.Datum_prestanka_ugovora) - parseDMY(b.emp.Datum_prestanka_ugovora));
 
@@ -5835,7 +5835,7 @@ function renderExpiryModal() {
     tdCheck.appendChild(cb);
     tr.appendChild(tdCheck);
 
-    [emp.Ime_i_prezime, emp.Restoran, emp.Radno_mjesto, emp.Tip_ugovora].forEach(v => {
+    [emp.Ime_i_prezime, emp.Poslovnica, emp.Radno_mjesto, emp.Tip_ugovora].forEach(v => {
       const td = document.createElement('td');
       td.textContent = v || '';
       tr.appendChild(td);
@@ -5884,7 +5884,7 @@ $('expiryOverlay').addEventListener('click', (e) => { if (e.target.id === 'expir
 $('expirySelectAllBtn').addEventListener('click', () => {
   const allowed = accessiblePoslovnicaNazivi();
   employees.forEach((emp, idx) => {
-    if (allowed !== null && !allowed.includes(emp.Restoran)) return;
+    if (allowed !== null && !allowed.includes(emp.Poslovnica)) return;
     if (parseDMY(emp.Datum_prestanka_ugovora)) expirySelection.add(idx);
   });
   renderExpiryModal();
