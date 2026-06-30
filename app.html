@@ -2711,7 +2711,11 @@ function render() {
     if (aktivnaFirmaFilter !== null) {
       const poslovniceFilm = (typeof poslovnice !== 'undefined' ? poslovnice : [])
         .filter(p => p.firma_id === aktivnaFirmaFilter).map(p => p.naziv);
-      if (!poslovniceFilm.includes(e.Restoran)) return false;
+      if (poslovniceFilm.length === 0) {
+        // Firma nema poslovnica - koristi naziv firme kao identifikator
+        const firmaNaziv = (firme.find(f => f.id === aktivnaFirmaFilter) || {}).naziv;
+        if (e.Restoran !== firmaNaziv) return false;
+      } else if (!poslovniceFilm.includes(e.Restoran)) return false;
     }
     if (search && !(e.Ime_i_prezime || '').toLowerCase().includes(search)) return false;
     if (fRestoran && e.Restoran !== fRestoran) return false;
