@@ -348,6 +348,14 @@
   .small { padding: 5px 9px; font-size: 12px; }
   .ghost { background: transparent; border: 1px solid var(--line); color: var(--ink); }
   .ghost:hover { background: var(--accent-soft); }
+  .btn-modal-close {
+    position: absolute; top: 10px; right: 12px;
+    background: none; border: none; cursor: pointer;
+    font-size: 18px; color: var(--muted); line-height: 1;
+    width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+    border-radius: 4px; transition: background 0.15s, color 0.15s;
+  }
+  .btn-modal-close:hover { background: rgba(0,0,0,0.08); color: var(--ink); }
 
   .table-wrap {
     background: var(--field-bg);
@@ -395,7 +403,7 @@
     position: sticky; top: 0; z-index: 10;
     background: var(--paper);
     border-bottom: 2px solid var(--accent-soft);
-    padding: 14px 20px 12px;
+    padding: 14px 48px 12px 20px;
     display: flex; justify-content: space-between; align-items: center;
     flex-wrap: wrap; gap: 8px;
     flex-shrink: 0;
@@ -452,6 +460,58 @@
     cursor: not-allowed;
   }
 
+  /* ---------- Login ekran - responsive ---------- */
+  .login-wrap { display:flex; width:100%; max-width:100%; min-height:100vh; overflow-x:hidden; }
+  .login-branding {
+    flex:1; min-width:0;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:48px; position:relative; overflow:hidden;
+  }
+  .login-form-side {
+    width:420px; min-width:320px; background:#fff;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:48px 40px;
+  }
+  @media (max-width: 760px) {
+    .login-wrap {
+      flex-direction:column; min-height:100vh; height:auto;
+      margin:-10px -8px 0; width:calc(100% + 16px); max-width:calc(100% + 16px);
+    }
+    .login-branding { flex:0 0 auto; padding:24px 20px 18px; min-height:0; width:100%; }
+    .login-branding img { width:120px !important; margin-bottom:12px !important; max-width:70% !important; }
+    .login-branding h1 { font-size:18px !important; margin-bottom:6px !important; }
+    .login-branding p { font-size:12px !important; max-width:260px !important; text-align:center; }
+    .login-branding .login-modules-row { margin-top:14px !important; gap:14px !important; }
+    .login-branding .login-copyright { display:none !important; }
+    .login-form-side { width:100% !important; min-width:0 !important; padding:24px 20px 28px; box-sizing:border-box; }
+  }
+
+  /* ---------- Mobilni sidebar (nakon prijave) ---------- */
+  .mobile-topbar { display:none; }
+  .sidebar-overlay-bg { display:none; }
+  @media (max-width: 900px) {
+    #sidebar { transform:translateX(-100%); transition:transform .25s ease; width:250px; min-width:250px; }
+    #sidebar.visible { display:flex; transform:translateX(-100%); }
+    #sidebar.mobile-open { transform:translateX(0); box-shadow:4px 0 24px rgba(0,0,0,0.35); }
+    #mainContent { margin-left:0 !important; }
+    .mobile-topbar {
+      display:flex; align-items:center; gap:10px;
+      position:sticky; top:0; z-index:90;
+      background:var(--sb-bg); color:#fff;
+      padding:10px 14px; margin:-10px -8px 14px;
+    }
+    .mobile-topbar .mt-burger {
+      background:none; border:none; color:#fff; cursor:pointer;
+      display:flex; flex-direction:column; gap:4px; padding:6px;
+    }
+    .mobile-topbar .mt-burger span { width:20px; height:2px; background:#fff; border-radius:2px; }
+    .mobile-topbar .mt-title { font-size:14px; font-weight:600; }
+    .sidebar-overlay-bg {
+      display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:99;
+    }
+    .sidebar-overlay-bg.open { display:block; }
+  }
+
   /* ---------- Mobilni telefon ---------- */
   @media (max-width: 640px) {
     body { padding: 10px 8px 50px; }
@@ -505,10 +565,10 @@
 <body>
 
 <div class="overlay open" id="loginOverlay" style="z-index:200; background:#0f1c2e; padding:0; align-items:stretch;">
-  <div style="display:flex; width:100%; min-height:100vh;">
+  <div class="login-wrap" style="display:flex; width:100%; min-height:100vh;">
 
     <!-- Lijeva strana — branding -->
-    <div style="flex:1; background:linear-gradient(145deg,#0f1c2e 0%,#16243D 60%,#1a3558 100%); display:flex; flex-direction:column; align-items:center; justify-content:center; padding:48px; position:relative; overflow:hidden;">
+    <div class="login-branding" style="flex:1; background:linear-gradient(145deg,#0f1c2e 0%,#16243D 60%,#1a3558 100%); display:flex; flex-direction:column; align-items:center; justify-content:center; padding:48px; position:relative; overflow:hidden;">
       <!-- Dekorativni krugovi u pozadini -->
       <div style="position:absolute;width:400px;height:400px;border-radius:50%;border:1px solid rgba(255,255,255,0.05);top:-100px;left:-100px;"></div>
       <div style="position:absolute;width:600px;height:600px;border-radius:50%;border:1px solid rgba(255,255,255,0.03);bottom:-200px;right:-200px;"></div>
@@ -523,7 +583,7 @@
         Sveobuhvatno poslovno rješenje za upravljanje kadrovima, finansijama i poslovnim procesima.
       </p>
 
-      <div style="margin-top:48px; display:flex; gap:24px;">
+      <div class="login-modules-row" style="margin-top:48px; display:flex; gap:24px;">
         <div style="text-align:center;">
           <div style="font-size:24px; font-weight:700; color:#6ea8fe;">👥</div>
           <div style="font-size:11px; color:rgba(255,255,255,0.4); margin-top:4px; text-transform:uppercase; letter-spacing:.08em;">Kadrovska</div>
@@ -538,11 +598,11 @@
         </div>
       </div>
 
-      <div style="position:absolute; bottom:24px; font-size:11px; color:rgba(255,255,255,0.25); letter-spacing:.08em;">© 2026 DND Solutions d.o.o. Banja Luka</div>
+      <div class="login-copyright" style="position:absolute; bottom:24px; font-size:11px; color:rgba(255,255,255,0.25); letter-spacing:.08em;">© 2026 DND Solutions d.o.o. Banja Luka</div>
     </div>
 
     <!-- Desna strana — forma -->
-    <div style="width:420px; min-width:320px; background:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:48px 40px;">
+    <div class="login-form-side" style="width:420px; min-width:320px; background:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:48px 40px;">
       <div style="width:100%; max-width:340px;">
         <div style="margin-bottom:32px;">
           <h2 style="font-family:Georgia,serif; font-size:26px; color:#16243D; margin:0 0 8px;">Dobrodošli</h2>
@@ -704,6 +764,13 @@
 
 <!-- Main content -->
 <div id="mainContent" style="display:none;">
+<div class="mobile-topbar">
+  <button class="mt-burger" id="mobileSidebarBtn" type="button" aria-label="Meni">
+    <span></span><span></span><span></span>
+  </button>
+  <span class="mt-title">DND Solutions</span>
+</div>
+<div class="sidebar-overlay-bg" id="sidebarOverlayBg"></div>
 <div class="wrap" id="appWrap" style="display:block;">
   <div style="display:none;" id="oldNavToolbar"></div>
 
@@ -854,7 +921,7 @@
   <div class="modal" style="max-width:min(95vw, 700px); width:100%;">
     <div class="modal-header">
       <h2>Radno vrijeme — <span id="rasporedRmNaziv"></span></h2>
-      <button type="button" class="ghost small" id="rasporedCloseBtn">Zatvori</button>
+      <button type="button" class="btn-modal-close" id="rasporedCloseBtn" title="Zatvori">&#10005;</button>
     </div>
     <div class="modal-body" id="rasporedModalBody"></div>
   </div>
@@ -864,7 +931,7 @@
 <div class="overlay" id="cardOverlay">
   <div class="modal" style="max-width:760px;">
     <div style="position:relative; padding-right:90px; margin-bottom:14px;">
-      <button type="button" class="ghost" id="cardCloseBtn" >Zatvori</button>
+      <button type="button" class="btn-modal-close" id="cardCloseBtn" title="Zatvori">&#10005;</button>
       <div style="display:flex; gap:8px; flex-wrap:wrap;">
         <button type="button" class="primary" id="cardEditBtn">Izmijeni</button>
         <button type="button" class="secondary" id="cardPrintBtn">&#128424; Štampaj karticu</button>
@@ -882,7 +949,7 @@
 <div class="overlay" id="overlay">
   <div class="modal">
     <div style="position:relative; padding-right:90px; margin-bottom:14px;">
-      <button type="button" class="ghost" id="cancelBtn" style="position:absolute; top:0; right:0;">Zatvori</button>
+      <button type="button" class="btn-modal-close" id="cancelBtn" title="Zatvori" style="position:absolute; top:8px; right:8px;">&#10005;</button>
       <div style="display:flex; gap:8px; flex-wrap:wrap;">
         <button type="submit" form="empForm" class="primary" id="saveBtn">Sačuvaj</button>
         <button type="button" class="ghost" id="deleteBtn" style="color:#a33; border-color:#a33; display:none;">Obriši zaposlenog</button>
@@ -975,7 +1042,7 @@
   <div class="modal" style="max-width:980px;">
     <div class="modal-header">
       <h2>Istek ugovora</h2>
-      <button type="button" class="ghost small" id="expiryCloseBtn">Zatvori</button>
+      <button type="button" class="btn-modal-close" id="expiryCloseBtn" title="Zatvori">&#10005;</button>
     </div>
     <div class="modal-body">
     <p style="font-size:12px; color:var(--muted); margin-top:-6px;">
@@ -1011,7 +1078,7 @@
   <div class="modal" style="max-width:980px;">
     <div class="modal-header">
       <h2>Izvještaji</h2>
-      <button type="button" class="ghost small" id="reportsCloseBtn">Zatvori</button>
+      <button type="button" class="btn-modal-close" id="reportsCloseBtn" title="Zatvori">&#10005;</button>
     </div>
     <div class="modal-body">
     <div class="toolbar" style="margin:8px 0;">
@@ -1053,7 +1120,7 @@
   <div class="modal" style="max-width:920px;">
     <div class="modal-header">
       <h2>Firme i poslovnice</h2>
-      <button type="button" class="ghost small" id="firmeCloseBtn">Zatvori</button>
+      <button type="button" class="btn-modal-close" id="firmeCloseBtn" title="Zatvori">&#10005;</button>
     </div>
     <div class="modal-body">
     <p style="font-size:12px; color:var(--muted); margin-bottom:10px;">
@@ -1083,7 +1150,7 @@
   <div class="modal" style="max-width:980px;">
     <div class="modal-header">
       <h2>Komitenti</h2>
-      <button type="button" class="ghost small" id="komitentiCloseBtn">Zatvori</button>
+      <button type="button" class="btn-modal-close" id="komitentiCloseBtn" title="Zatvori">&#10005;</button>
     </div>
     <div class="modal-body">
     <div class="toolbar" style="margin:8px 0;">
@@ -1125,7 +1192,7 @@
   <div class="modal" style="max-width:980px;">
     <div class="modal-header">
       <h2>Godišnji odmori</h2>
-      <button type="button" class="ghost small" id="goCloseBtn">Zatvori</button>
+      <button type="button" class="btn-modal-close" id="goCloseBtn" title="Zatvori">&#10005;</button>
     </div>
     <div class="modal-body">
     <p style="font-size:12px; color:var(--muted); margin-top:-6px;">
@@ -1218,7 +1285,7 @@
   <div class="modal" style="max-width:1100px;">
     <div class="modal-header">
       <h2>Šihterica</h2>
-      <button type="button" class="ghost small" id="sihtericaCloseBtn">Zatvori</button>
+      <button type="button" class="btn-modal-close" id="sihtericaCloseBtn" title="Zatvori">&#10005;</button>
     </div>
     <div class="modal-body">
 
@@ -1248,7 +1315,7 @@
   <div class="modal">
     <div class="modal-header">
       <h2>Korisnici</h2>
-      <button type="button" class="ghost small" id="usersCloseBtn">Zatvori</button>
+      <button type="button" class="btn-modal-close" id="usersCloseBtn" title="Zatvori">&#10005;</button>
     </div>
     <div class="modal-body">
     <p style="font-size:12px; color:var(--muted); margin-bottom:10px;">
@@ -1290,7 +1357,7 @@
   <div class="modal">
     <div class="modal-header">
       <h2>Radna mjesta</h2>
-      <button type="button" class="ghost small" id="radnaMjestaCloseBtn">Zatvori</button>
+      <button type="button" class="btn-modal-close" id="radnaMjestaCloseBtn" title="Zatvori">&#10005;</button>
     </div>
     <div class="modal-body">
     <p style="font-size:12px; color:var(--muted); margin-bottom:10px;">
@@ -1307,7 +1374,7 @@
   <div class="modal">
     <div class="modal-header">
       <h2>Odjeli</h2>
-      <button type="button" class="ghost small" id="odjeliCloseBtn">Zatvori</button>
+      <button type="button" class="btn-modal-close" id="odjeliCloseBtn" title="Zatvori">&#10005;</button>
     </div>
     <div class="modal-body">
     <p style="font-size:12px; color:var(--muted); margin-bottom:10px;">
@@ -1322,7 +1389,7 @@
   <div class="modal">
     <div class="modal-header">
       <h2>Tip ugovora</h2>
-      <button type="button" class="ghost small" id="tipUgovoraCloseBtn">Zatvori</button>
+      <button type="button" class="btn-modal-close" id="tipUgovoraCloseBtn" title="Zatvori">&#10005;</button>
     </div>
     <div class="modal-body">
     <p style="font-size:12px; color:var(--muted); margin-bottom:10px;">
@@ -1337,7 +1404,7 @@
   <div class="modal">
     <div class="modal-header">
       <h2>Stručna sprema</h2>
-      <button type="button" class="ghost small" id="strucnaSpremaCloseBtn">Zatvori</button>
+      <button type="button" class="btn-modal-close" id="strucnaSpremaCloseBtn" title="Zatvori">&#10005;</button>
     </div>
     <div class="modal-body">
     <p style="font-size:12px; color:var(--muted); margin-bottom:10px;">
@@ -1353,7 +1420,7 @@
   <div class="modal" style="max-width:500px;">
     <div class="modal-header">
       <h2>Podešavanja godišnjeg odmora</h2>
-      <button type="button" class="ghost small" id="goPodesavanjaCloseBtn">Zatvori</button>
+      <button type="button" class="btn-modal-close" id="goPodesavanjaCloseBtn" title="Zatvori">&#10005;</button>
     </div>
     <div class="modal-body">
     <p style="font-size:12px; color:var(--muted); margin-bottom:14px;">
@@ -1391,7 +1458,7 @@
   <div class="modal">
     <div class="modal-header">
       <h2>Praznici</h2>
-      <button type="button" class="ghost small" id="praznikCloseBtn">Zatvori</button>
+      <button type="button" class="btn-modal-close" id="praznikCloseBtn" title="Zatvori">&#10005;</button>
     </div>
     <div class="modal-body">
     <p style="font-size:12px; color:var(--muted); margin-bottom:10px;">
@@ -1448,7 +1515,7 @@
       <h2>Evidencija izmjena</h2>
       <div style="display:flex;gap:8px;">
         <button type="button" class="ghost small" id="auditClearBtn" style="display:none; color:#a33; border-color:#a33;">Obriši evidenciju</button>
-        <button type="button" class="ghost small" id="auditCloseBtn">Zatvori</button>
+        <button type="button" class="btn-modal-close" id="auditCloseBtn" title="Zatvori">&#10005;</button>
       </div>
     </div>
     <div class="modal-body">
@@ -2664,6 +2731,18 @@ function render() {
   filtered.forEach((emp) => {
     const realIndex = employees.indexOf(emp);
     const tr = document.createElement('tr');
+
+    // Checkbox kolona
+    const tdCb = document.createElement('td');
+    tdCb.style.cssText = 'width:36px; text-align:center;';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.className = 'row-cb';
+    cb.dataset.idx = realIndex;
+    cb.style.cursor = 'pointer';
+    cb.addEventListener('change', updateCheckAllState);
+    tdCb.appendChild(cb);
+    tr.appendChild(tdCb);
 
     const tdBroj = document.createElement('td');
     tdBroj.textContent = protokolBroj(emp);
@@ -6012,6 +6091,28 @@ function updateSidebar() {
 }
 
 // Odjava iz sidebara
+// ── Mobilni sidebar toggle ──────────────────────────────────────────────
+function openMobileSidebar() {
+  document.getElementById('sidebar').classList.add('mobile-open');
+  const bg = document.getElementById('sidebarOverlayBg');
+  if (bg) bg.classList.add('open');
+}
+function closeMobileSidebar() {
+  document.getElementById('sidebar').classList.remove('mobile-open');
+  const bg = document.getElementById('sidebarOverlayBg');
+  if (bg) bg.classList.remove('open');
+}
+const _mobileSidebarBtn = document.getElementById('mobileSidebarBtn');
+if (_mobileSidebarBtn) _mobileSidebarBtn.addEventListener('click', openMobileSidebar);
+const _sidebarOverlayBg = document.getElementById('sidebarOverlayBg');
+if (_sidebarOverlayBg) _sidebarOverlayBg.addEventListener('click', closeMobileSidebar);
+document.getElementById('sidebar').addEventListener('click', (e) => {
+  if (window.innerWidth <= 900 && (e.target.closest('.sidebar-item') || e.target.closest('.sidebar-logout'))) {
+    closeMobileSidebar();
+  }
+});
+// ──────────────────────────────────────────────────────────────────────
+
 // ── Firma dropdown za admin/super_admin ────────────────────────────────
 let aktivnaFirmaFilter = null; // null = sve firme
 
