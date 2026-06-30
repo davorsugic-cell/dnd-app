@@ -387,6 +387,48 @@
     .login-form-side { width:100%; min-width:0; padding:28px 24px 32px; }
   }
 
+  /* ---------- Mobilni sidebar (nakon prijave) ---------- */
+  .mobile-topbar { display: none; }
+  .sidebar-overlay-bg { display: none; }
+
+  @media (max-width: 900px) {
+    #sidebar {
+      transform: translateX(-100%);
+      transition: transform .25s ease;
+      width: 250px;
+      min-width: 250px;
+    }
+    #sidebar.visible { display: flex; transform: translateX(-100%); }
+    #sidebar.mobile-open { transform: translateX(0); box-shadow: 4px 0 24px rgba(0,0,0,0.35); }
+    #mainContent { margin-left: 0 !important; }
+
+    .mobile-topbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      position: sticky;
+      top: 0;
+      z-index: 90;
+      background: #16243D;
+      color: #fff;
+      padding: 10px 14px;
+      margin: -10px -8px 14px;
+    }
+    .mobile-topbar .mt-burger {
+      background: none; border: none; color: #fff; cursor: pointer;
+      display: flex; flex-direction: column; gap: 4px; padding: 6px;
+    }
+    .mobile-topbar .mt-burger span { width: 20px; height: 2px; background: #fff; border-radius: 2px; }
+    .mobile-topbar .mt-title { font-size: 14px; font-weight: 600; }
+
+    .sidebar-overlay-bg {
+      display: none;
+      position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+      z-index: 99;
+    }
+    .sidebar-overlay-bg.open { display: block; }
+  }
+
   /* ---------- Mobilni telefon ---------- */
   @media (max-width: 640px) {
     body { padding: 10px 8px 50px; }
@@ -629,6 +671,13 @@
 
 <!-- Main content -->
 <div id="mainContent" style="display:none;">
+<div class="mobile-topbar">
+  <button class="mt-burger" id="mobileSidebarBtn" type="button" aria-label="Meni">
+    <span></span><span></span><span></span>
+  </button>
+  <span class="mt-title">DND Solutions — Kadrovska</span>
+</div>
+<div class="sidebar-overlay-bg" id="sidebarOverlayBg"></div>
 <div class="wrap" id="appWrap" style="display:block;">
   <div style="display:none;" id="oldNavToolbar"></div>
 
@@ -5853,6 +5902,26 @@ function updateSidebar() {
 
 // Odjava iz sidebara
 document.getElementById('sidebarLogoutBtn').addEventListener('click', () => doLogout('manual'));
+
+// ── Mobilni sidebar toggle ──────────────────────────────────────────────
+function openMobileSidebar() {
+  document.getElementById('sidebar').classList.add('mobile-open');
+  document.getElementById('sidebarOverlayBg').classList.add('open');
+}
+function closeMobileSidebar() {
+  document.getElementById('sidebar').classList.remove('mobile-open');
+  document.getElementById('sidebarOverlayBg').classList.remove('open');
+}
+const _mobileSidebarBtn = document.getElementById('mobileSidebarBtn');
+if (_mobileSidebarBtn) _mobileSidebarBtn.addEventListener('click', openMobileSidebar);
+const _sidebarOverlayBg = document.getElementById('sidebarOverlayBg');
+if (_sidebarOverlayBg) _sidebarOverlayBg.addEventListener('click', closeMobileSidebar);
+document.getElementById('sidebar').addEventListener('click', (e) => {
+  if (window.innerWidth <= 900 && (e.target.closest('.sidebar-item') || e.target.closest('.sidebar-logout'))) {
+    closeMobileSidebar();
+  }
+});
+// ──────────────────────────────────────────────────────────────────────
 
 // Hamburger dugme (ako postoji) - više se ne koristi ali ne brisati radi eventListenera
 // hamburgerBtn je uklonjen iz DOM-a
