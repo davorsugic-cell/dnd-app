@@ -364,48 +364,30 @@
     cursor: not-allowed;
   }
 
-  /* ---------- Mobilni telefon ---------- */
-  .mobile-topbar { display: none; }
-  .sidebar-overlay-bg { display: none; }
-
-  @media (max-width: 900px) {
-    #sidebar {
-      transform: translateX(-100%);
-      transition: transform .25s ease;
-      width: 250px;
-      min-width: 250px;
-    }
-    #sidebar.visible { display: flex; transform: translateX(-100%); }
-    #sidebar.mobile-open { transform: translateX(0); box-shadow: 4px 0 24px rgba(0,0,0,0.35); }
-    #mainContent { margin-left: 0 !important; }
-
-    .mobile-topbar {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      position: sticky;
-      top: 0;
-      z-index: 90;
-      background: #16243D;
-      color: #fff;
-      padding: 10px 14px;
-      margin: -10px -8px 14px;
-    }
-    .mobile-topbar .mt-burger {
-      background: none; border: none; color: #fff; cursor: pointer;
-      display: flex; flex-direction: column; gap: 4px; padding: 6px;
-    }
-    .mobile-topbar .mt-burger span { width: 20px; height: 2px; background: #fff; border-radius: 2px; }
-    .mobile-topbar .mt-title { font-size: 14px; font-weight: 600; }
-
-    .sidebar-overlay-bg {
-      display: none;
-      position: fixed; inset: 0; background: rgba(0,0,0,0.45);
-      z-index: 99;
-    }
-    .sidebar-overlay-bg.open { display: block; }
+  /* ---------- Login ekran - responsive ---------- */
+  .login-wrap { display:flex; width:100%; min-height:100vh; }
+  .login-branding {
+    flex:1; background:linear-gradient(145deg,#0f1c2e 0%,#16243D 60%,#1a3558 100%);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:48px; position:relative; overflow:hidden;
+  }
+  .login-form-side {
+    width:420px; min-width:320px; background:#fff;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:48px 40px;
+  }
+  @media (max-width: 760px) {
+    .login-wrap { flex-direction:column; min-height:100vh; height:auto; }
+    .login-branding { flex:0 0 auto; padding:28px 24px 20px; min-height:0; }
+    .login-branding img { width:130px !important; margin-bottom:14px !important; }
+    .login-branding h1 { font-size:20px !important; margin-bottom:8px !important; }
+    .login-branding p { font-size:12.5px !important; max-width:280px !important; }
+    .login-branding .login-modules-row { margin-top:18px !important; gap:18px !important; }
+    .login-branding .login-copyright { display:none; }
+    .login-form-side { width:100%; min-width:0; padding:28px 24px 32px; }
   }
 
+  /* ---------- Mobilni telefon ---------- */
   @media (max-width: 640px) {
     body { padding: 10px 8px 50px; }
     .wrap { max-width: 100%; }
@@ -458,10 +440,10 @@
 <body>
 
 <div class="overlay open" id="loginOverlay" style="z-index:200; background:#0f1c2e; padding:0; align-items:stretch;">
-  <div style="display:flex; width:100%; min-height:100vh;">
+  <div class="login-wrap" style="display:flex; width:100%; min-height:100vh;">
 
     <!-- Lijeva strana — branding -->
-    <div style="flex:1; background:linear-gradient(145deg,#0f1c2e 0%,#16243D 60%,#1a3558 100%); display:flex; flex-direction:column; align-items:center; justify-content:center; padding:48px; position:relative; overflow:hidden;">
+    <div class="login-branding" style="flex:1; background:linear-gradient(145deg,#0f1c2e 0%,#16243D 60%,#1a3558 100%); display:flex; flex-direction:column; align-items:center; justify-content:center; padding:48px; position:relative; overflow:hidden;">
       <!-- Dekorativni krugovi u pozadini -->
       <div style="position:absolute;width:400px;height:400px;border-radius:50%;border:1px solid rgba(255,255,255,0.05);top:-100px;left:-100px;"></div>
       <div style="position:absolute;width:600px;height:600px;border-radius:50%;border:1px solid rgba(255,255,255,0.03);bottom:-200px;right:-200px;"></div>
@@ -476,7 +458,7 @@
         Sveobuhvatno poslovno rješenje za upravljanje kadrovima, finansijama i poslovnim procesima.
       </p>
 
-      <div style="margin-top:48px; display:flex; gap:24px;">
+      <div class="login-modules-row" style="margin-top:48px; display:flex; gap:24px;">
         <div style="text-align:center;">
           <div style="font-size:24px; font-weight:700; color:#6ea8fe;">👥</div>
           <div style="font-size:11px; color:rgba(255,255,255,0.4); margin-top:4px; text-transform:uppercase; letter-spacing:.08em;">Kadrovska</div>
@@ -491,11 +473,11 @@
         </div>
       </div>
 
-      <div style="position:absolute; bottom:24px; font-size:11px; color:rgba(255,255,255,0.25); letter-spacing:.08em;">© 2026 DND Solutions d.o.o. Banja Luka</div>
+      <div class="login-copyright" style="position:absolute; bottom:24px; font-size:11px; color:rgba(255,255,255,0.25); letter-spacing:.08em;">© 2026 DND Solutions d.o.o. Banja Luka</div>
     </div>
 
     <!-- Desna strana — forma -->
-    <div style="width:420px; min-width:320px; background:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:48px 40px;">
+    <div class="login-form-side" style="width:420px; min-width:320px; background:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:48px 40px;">
       <div style="width:100%; max-width:340px;">
         <div style="margin-bottom:32px;">
           <h2 style="font-family:Georgia,serif; font-size:26px; color:#16243D; margin:0 0 8px;">Dobrodošli</h2>
@@ -647,13 +629,6 @@
 
 <!-- Main content -->
 <div id="mainContent" style="display:none;">
-<div class="mobile-topbar">
-  <button class="mt-burger" id="mobileSidebarBtn" type="button" aria-label="Meni">
-    <span></span><span></span><span></span>
-  </button>
-  <span class="mt-title">DND Solutions — Kadrovska</span>
-</div>
-<div class="sidebar-overlay-bg" id="sidebarOverlayBg"></div>
 <div class="wrap" id="appWrap" style="display:block;">
   <div style="display:none;" id="oldNavToolbar"></div>
 
@@ -5881,27 +5856,6 @@ document.getElementById('sidebarLogoutBtn').addEventListener('click', () => doLo
 
 // Hamburger dugme (ako postoji) - više se ne koristi ali ne brisati radi eventListenera
 // hamburgerBtn je uklonjen iz DOM-a
-
-// ── Mobilni sidebar toggle ──────────────────────────────────────────────
-function openMobileSidebar() {
-  document.getElementById('sidebar').classList.add('mobile-open');
-  document.getElementById('sidebarOverlayBg').classList.add('open');
-}
-function closeMobileSidebar() {
-  document.getElementById('sidebar').classList.remove('mobile-open');
-  document.getElementById('sidebarOverlayBg').classList.remove('open');
-}
-const _mobileSidebarBtn = document.getElementById('mobileSidebarBtn');
-if (_mobileSidebarBtn) _mobileSidebarBtn.addEventListener('click', openMobileSidebar);
-const _sidebarOverlayBg = document.getElementById('sidebarOverlayBg');
-if (_sidebarOverlayBg) _sidebarOverlayBg.addEventListener('click', closeMobileSidebar);
-// Zatvori mobilni sidebar kad se klikne na bilo koju stavku unutar njega
-document.getElementById('sidebar').addEventListener('click', (e) => {
-  if (window.innerWidth <= 900 && (e.target.closest('.sidebar-item') || e.target.closest('.sidebar-logout'))) {
-    closeMobileSidebar();
-  }
-});
-// ──────────────────────────────────────────────────────────────────────
 
 // Kad se korisnik prijavi, prikaži sidebar i sadržaj
 const _origAttemptLogin = attemptLogin;
