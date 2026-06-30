@@ -32,36 +32,40 @@
 
   /* Obračun — zelena tema */
   html.tema-obracun {
-    --sb-bg: #14301e;
-    --sb-bg2: #1a3d26;
+    --sb-bg: #0f2318;
+    --sb-bg2: #163020;
     --sb-active: #1a5c2e;
     --sb-active-border: #4ade80;
     --sb-active-btn: #1a5c2e;
     --sb-h1-color: #4ade80;
     --accent: #1a5c2e;
-    --accent-soft: #dcf5e4;
-    --row-alt: #ebf7ef;
+    --accent-soft: #d4f0de;
+    --row-alt: #e8f7ed;
     --btn-primary-bg: #1a5c2e;
     --btn-primary-hover: #22763a;
     --header-accent: #1a5c2e;
-    --header-soft: #dcf5e4;
+    --header-soft: #d4f0de;
+    --ink: #0f2318;
+    --line: #a8d5b8;
   }
 
   /* Troškovi — narančasta tema */
   html.tema-troskovi {
-    --sb-bg: #2e1a08;
-    --sb-bg2: #3d2310;
+    --sb-bg: #2a1200;
+    --sb-bg2: #3d1c00;
     --sb-active: #7c3a0a;
     --sb-active-border: #fb923c;
     --sb-active-btn: #7c3a0a;
     --sb-h1-color: #fb923c;
     --accent: #7c3a0a;
-    --accent-soft: #fdebd6;
-    --row-alt: #fef3eb;
+    --accent-soft: #fde8d0;
+    --row-alt: #fef0e5;
     --btn-primary-bg: #7c3a0a;
     --btn-primary-hover: #a04d10;
     --header-accent: #7c3a0a;
-    --header-soft: #fdebd6;
+    --header-soft: #fde8d0;
+    --ink: #2a1200;
+    --line: #f0c4a0;
   }
   * { box-sizing: border-box; }
   body {
@@ -645,12 +649,6 @@
     <button class="sidebar-item" id="sb_goPodesavanja" type="button" onclick="sidebarClick('sb_goPodesavanja', 'goPodesavanjaBtn')">
       <span class="ico">🌴</span> Godišnji odmor — pravila
     </button>
-    <button class="sidebar-item" id="sb_firme" type="button" style="display:none;" onclick="sidebarClick('sb_firme', 'firmeBtn')">
-      <span class="ico">🏛</span> Firme i poslovnice
-    </button>
-    <button class="sidebar-item" id="sb_komitenti" type="button" onclick="sidebarClick('sb_komitenti', 'komitentiBtn')">
-      <span class="ico">🤝</span> Komitenti
-    </button>
   </div>
 
   <!-- Izvještaji -->
@@ -677,6 +675,12 @@
     Administracija <span class="arrow">▾</span>
   </div>
   <div class="sidebar-group-items collapsed">
+    <button class="sidebar-item" id="sb_firme" type="button" style="display:none;" onclick="sidebarClick('sb_firme', 'firmeBtn')">
+      <span class="ico">🏛</span> Firme i poslovnice
+    </button>
+    <button class="sidebar-item" id="sb_komitenti" type="button" onclick="sidebarClick('sb_komitenti', 'komitentiBtn')">
+      <span class="ico">🤝</span> Komitenti
+    </button>
     <button class="sidebar-item" id="sb_users" type="button" style="display:none;" onclick="sidebarClick('sb_users', 'usersBtn')">
       <span class="ico">👤</span> Korisnici
     </button>
