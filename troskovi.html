@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DND Solutions</title>
+<title>Troškovi — DND Solutions</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -14,7 +14,7 @@
 --blue-light:#3b82f6;
 --blue-glow:#60a5fa;
 }
-html,body{height:100%;overflow:hidden;font-family:'Inter',sans-serif;background:var(--navy);color:#fff;}
+html,body{min-height:100%;font-family:'Inter',sans-serif;background:var(--navy);color:#fff;}
 
 nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 48px;height:62px;background:rgba(13,27,53,0.95);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.07);}
 .nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;}
@@ -25,6 +25,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:cen
 .nav-links{display:flex;align-items:center;gap:28px;}
 .nav-links a{text-decoration:none;color:rgba(255,255,255,0.6);font-size:13.5px;transition:color 0.2s;}
 .nav-links a:hover{color:#fff;}
+.nav-links a.active{color:#fff;}
 .nav-right{display:flex;align-items:center;gap:14px;}
 .nav-icons{display:flex;align-items:center;gap:12px;}
 .nav-icons a{color:rgba(255,255,255,0.5);display:flex;align-items:center;transition:color 0.2s;}
@@ -33,43 +34,56 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:cen
 .btn-login{background:var(--blue);color:#fff;text-decoration:none;padding:8px 20px;border-radius:7px;font-size:13.5px;font-weight:500;transition:background 0.2s;white-space:nowrap;}
 .btn-login:hover{background:var(--blue-light);}
 
-.hero{height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:62px 48px 44px;position:relative;overflow:hidden;}
-.glow{position:absolute;top:30%;left:50%;transform:translateX(-50%);width:700px;height:400px;background:radial-gradient(ellipse,rgba(37,99,235,0.13) 0%,transparent 70%);pointer-events:none;}
+.hamburger{display:none;flex-direction:column;gap:4px;background:none;border:none;cursor:pointer;padding:6px;}
+.hamburger span{width:20px;height:2px;background:#fff;border-radius:2px;}
+.mobile-menu{display:none;}
 
-.badge{display:inline-flex;align-items:center;gap:7px;background:rgba(37,99,235,0.12);border:1px solid rgba(37,99,235,0.28);color:var(--blue-glow);font-size:11px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;padding:5px 14px;border-radius:100px;margin-bottom:24px;}
-.badge-dot{width:5px;height:5px;background:var(--blue-glow);border-radius:50%;}
+/* -- Module hero -- */
+.mhero{padding:150px 48px 70px;max-width:920px;margin:0 auto;position:relative;overflow:hidden;}
+.glow{position:absolute;top:0;left:50%;transform:translateX(-50%);width:700px;height:400px;background:radial-gradient(ellipse,rgba(37,99,235,0.15) 0%,transparent 70%);pointer-events:none;}
+.back-link{display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,0.45);text-decoration:none;font-size:13px;margin-bottom:28px;transition:color 0.2s;}
+.back-link:hover{color:#fff;}
+.back-link svg{width:14px;height:14px;}
+.mhero-icon{width:64px;height:64px;border-radius:16px;background:rgba(37,99,235,0.14);border:1px solid rgba(37,99,235,0.3);display:flex;align-items:center;justify-content:center;font-size:30px;margin-bottom:26px;}
+.mhero h1{font-size:clamp(28px,4vw,42px);font-weight:700;line-height:1.15;letter-spacing:-0.02em;max-width:640px;margin-bottom:16px;}
+.mhero .sub{font-size:16px;color:rgba(255,255,255,0.6);max-width:560px;line-height:1.65;}
 
-h1{font-size:clamp(32px,4.5vw,56px);font-weight:700;line-height:1.1;letter-spacing:-0.02em;max-width:700px;margin-bottom:18px;}
-h1 em{font-style:normal;color:var(--blue-light);}
-.sub{font-size:16px;color:rgba(255,255,255,0.58);max-width:480px;line-height:1.65;margin-bottom:48px;}
+/* -- Feature grid -- */
+.features{max-width:920px;margin:0 auto;padding:0 48px 90px;display:grid;grid-template-columns:repeat(2,1fr);gap:16px;}
+.feature{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:26px 24px;}
+.feature-icon{font-size:22px;margin-bottom:14px;display:block;}
+.feature h3{font-size:15px;font-weight:600;margin-bottom:8px;letter-spacing:-0.01em;}
+.feature p{font-size:13.5px;color:rgba(255,255,255,0.5);line-height:1.6;}
 
-.modules{display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:center;margin-bottom:48px;}
-.chip{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:12px;padding:14px 20px;min-width:155px;transition:border-color 0.2s,background 0.2s;text-decoration:none;cursor:pointer;}
-.chip:hover{background:rgba(255,255,255,0.07);border-color:rgba(255,255,255,0.15);}
-.chip-icon{font-size:22px;}
-.chip-label span:first-child{display:block;font-size:12px;font-weight:600;color:#fff;letter-spacing:0.05em;text-transform:uppercase;}
-.chip-label span:last-child{display:block;font-size:11px;color:rgba(255,255,255,0.38);margin-top:2px;}
-
-.cta-row{display:flex;align-items:center;gap:14px;}
-.btn-primary{background:var(--blue);color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:500;transition:background 0.2s;}
+/* -- CTA band -- */
+.cta-band{max-width:920px;margin:0 auto;padding:0 48px 90px;}
+.cta-box{background:linear-gradient(135deg,rgba(37,99,235,0.14),rgba(37,99,235,0.04));border:1px solid rgba(37,99,235,0.25);border-radius:18px;padding:40px 44px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;}
+.cta-box h2{font-size:20px;font-weight:600;margin-bottom:6px;letter-spacing:-0.01em;}
+.cta-box p{font-size:13.5px;color:rgba(255,255,255,0.55);}
+.cta-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+.btn-primary{background:var(--blue);color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:500;transition:background 0.2s;white-space:nowrap;}
 .btn-primary:hover{background:var(--blue-light);}
-.btn-secondary{color:rgba(255,255,255,0.6);text-decoration:none;font-size:14px;display:flex;align-items:center;gap:6px;transition:color 0.2s;}
+.btn-secondary{color:rgba(255,255,255,0.6);text-decoration:none;font-size:14px;display:flex;align-items:center;gap:6px;transition:color 0.2s;white-space:nowrap;}
 .btn-secondary:hover{color:#fff;}
 .btn-secondary svg{width:14px;height:14px;}
 
-.bottom-bar{position:fixed;bottom:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;padding:0 48px;height:44px;background:rgba(13,27,53,0.9);border-top:1px solid rgba(255,255,255,0.06);font-size:12px;color:rgba(255,255,255,0.35);}
+/* -- Other modules -- */
+.other-modules{max-width:920px;margin:0 auto;padding:0 48px 100px;}
+.other-modules h4{font-size:12px;font-weight:600;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:16px;}
+.other-grid{display:flex;gap:14px;flex-wrap:wrap;}
+.other-chip{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:12px;padding:14px 20px;min-width:200px;text-decoration:none;transition:border-color 0.2s,background 0.2s;flex:1;}
+.other-chip:hover{background:rgba(255,255,255,0.07);border-color:rgba(255,255,255,0.15);}
+.other-chip-icon{font-size:20px;}
+.other-chip-label span:first-child{display:block;font-size:12px;font-weight:600;color:#fff;letter-spacing:0.05em;text-transform:uppercase;}
+.other-chip-label span:last-child{display:block;font-size:11px;color:rgba(255,255,255,0.38);margin-top:2px;}
+
+footer.site-footer{display:flex;align-items:center;justify-content:space-between;padding:18px 48px;height:auto;background:rgba(255,255,255,0.02);border-top:1px solid rgba(255,255,255,0.06);font-size:12px;color:rgba(255,255,255,0.35);flex-wrap:wrap;gap:10px;}
 .bottom-links{display:flex;align-items:center;gap:20px;}
 .bottom-links a{color:rgba(255,255,255,0.4);text-decoration:none;display:flex;align-items:center;gap:5px;font-size:12px;transition:color 0.2s;}
 .bottom-links a:hover{color:#fff;}
 .bottom-links svg{width:13px;height:13px;}
 
-/* ── Mobile menu ── */
-.hamburger{display:none;flex-direction:column;gap:4px;background:none;border:none;cursor:pointer;padding:6px;}
-.hamburger span{width:20px;height:2px;background:#fff;border-radius:2px;}
-.mobile-menu{display:none;}
-
 @media (max-width: 820px){
-  html,body{height:100%;overflow:hidden;}
   nav{padding:0 16px;height:52px;}
   .nav-links{display:none;}
   .nav-icons{display:none;}
@@ -77,50 +91,14 @@ h1 em{font-style:normal;color:var(--blue-light);}
   .nav-logo-text span:last-child{display:none;}
   .hamburger{display:flex;}
 
-  .hero{
-    height:100vh;
-    padding:52px 22px 0;
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    align-items:center;
-  }
+  .mhero{padding:96px 20px 50px;}
   .glow{width:500px;height:300px;}
-
-  /* Gornja polovina: logo / badge / naslov / opis */
-  .hero-top{
-    flex:0 0 50%;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-  }
-  .badge{font-size:10px;padding:4px 12px;margin-bottom:14px;}
-  h1{font-size:clamp(24px,7.5vw,32px);margin-bottom:12px;}
-  .sub{font-size:13px;margin-bottom:0;max-width:320px;line-height:1.5;}
-
-  /* Donja polovina: moduli + CTA */
-  .hero-bottom{
-    flex:0 0 50%;
-    width:100%;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    gap:18px;
-  }
-  .modules{margin-bottom:0;gap:8px;width:100%;}
-  .chip{flex:1 1 calc(33.333% - 8px);min-width:auto;padding:10px 8px;flex-direction:column;text-align:center;gap:4px;}
-  .chip-icon{font-size:18px;}
-  .chip-label{align-items:center;}
-  .chip-label span:first-child{font-size:10px;}
-  .chip-label span:last-child{display:none;}
-
-  .cta-row{flex-direction:column;gap:10px;width:100%;}
-  .btn-primary{width:100%;text-align:center;padding:13px 24px;font-size:14px;}
-  .btn-secondary{font-size:12.5px;}
-
-  .bottom-bar{display:none;}
+  .features{grid-template-columns:1fr;padding:0 20px 60px;}
+  .cta-band{padding:0 20px 60px;}
+  .cta-box{flex-direction:column;align-items:flex-start;padding:28px 24px;}
+  .other-modules{padding:0 20px 70px;}
+  .other-grid{flex-direction:column;}
+  footer.site-footer{flex-direction:column;align-items:flex-start;padding:16px 20px;}
 
   .mobile-menu{display:none;position:fixed;top:52px;left:0;right:0;background:rgba(13,27,53,0.98);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.08);z-index:99;padding:8px 18px 18px;flex-direction:column;}
   .mobile-menu.open{display:flex;}
@@ -130,16 +108,12 @@ h1 em{font-style:normal;color:var(--blue-light);}
   .mobile-menu .mm-icons a{border:none;padding:0;display:flex;align-items:center;gap:6px;}
   .mobile-menu .mm-login{background:var(--blue);text-align:center;border-radius:7px;margin-top:6px;}
 }
-
-@media (max-width: 360px){
-  .chip-label span:first-child{font-size:9px;}
-}
 </style>
 </head>
 <body>
 
 <nav>
-  <a href="#" class="nav-logo">
+  <a href="index.html" class="nav-logo">
     <div class="nav-logo-icon">
       <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
     </div>
@@ -152,8 +126,8 @@ h1 em{font-style:normal;color:var(--blue-light);}
   <div class="nav-links">
     <a href="kadrovska.html">Kadrovska</a>
     <a href="obracun.html">Obračun plata</a>
-    <a href="troskovi.html">Troškovi</a>
-    <a href="#kontakt">Kontakt</a>
+    <a href="troskovi.html" class="active">Troškovi</a>
+    <a href="index.html#kontakt">Kontakt</a>
   </div>
 
   <div class="nav-right">
@@ -176,7 +150,7 @@ h1 em{font-style:normal;color:var(--blue-light);}
   <a href="kadrovska.html" onclick="document.getElementById('mobileMenu').classList.remove('open')">Kadrovska</a>
   <a href="obracun.html" onclick="document.getElementById('mobileMenu').classList.remove('open')">Obračun plata</a>
   <a href="troskovi.html" onclick="document.getElementById('mobileMenu').classList.remove('open')">Troškovi</a>
-  <a href="#kontakt" onclick="document.getElementById('mobileMenu').classList.remove('open')">Kontakt</a>
+  <a href="index.html#kontakt" onclick="document.getElementById('mobileMenu').classList.remove('open')">Kontakt</a>
   <a href="https://dnd-app-pbzr.vercel.app/app.html" target="_blank" class="mm-login">Prijava u aplikaciju</a>
   <div class="mm-icons">
     <a href="mailto:infodndsolutions@gmail.com">
@@ -190,39 +164,46 @@ h1 em{font-style:normal;color:var(--blue-light);}
   </div>
 </div>
 
-<div class="hero">
+<div class="mhero">
   <div class="glow"></div>
-  <div class="hero-top">
-    <div class="badge"><span class="badge-dot"></span>Poslovna platforma</div>
-    <h1>Platforma za <em>upravljanje</em> poslovanjem</h1>
-    <p class="sub">Sveobuhvatno poslovno rješenje za upravljanje kadrovima, finansijama i poslovnim procesima na jednom mjestu.</p>
+  <a href="index.html" class="back-link">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    Nazad na početnu
+  </a>
+  <div class="mhero-icon">📦</div>
+  <h1>Troškovi pod kontrolom</h1>
+  <p class="sub">Praćenje poslovnih troškova po poslovnicama, kategorijama i periodu - jasan uvid u potrošnju u svakom trenutku.</p>
+</div>
+
+<div class="features">
+  <div class="feature">
+    <span class="feature-icon">🧾</span>
+    <h3>Evidencija troškova</h3>
+    <p>Unos i kategorizacija troškova po vrsti, dobavljaču i poslovnici.</p>
   </div>
+  <div class="feature">
+    <span class="feature-icon">📈</span>
+    <h3>Pregled po periodu</h3>
+    <p>Mjesečni i godišnji pregledi potrošnje na jednom mjestu.</p>
+  </div>
+  <div class="feature">
+    <span class="feature-icon">🏢</span>
+    <h3>Po poslovnicama</h3>
+    <p>Odvojeno praćenje troškova za svaku lokaciju i firmu.</p>
+  </div>
+  <div class="feature">
+    <span class="feature-icon">📥</span>
+    <h3>Izvještaji</h3>
+    <p>Izvoz podataka za dalju analizu ili knjigovodstvo.</p>
+  </div>
+</div>
 
-  <div class="hero-bottom">
-    <div class="modules">
-      <a href="kadrovska.html" class="chip">
-        <span class="chip-icon">👥</span>
-        <div class="chip-label">
-          <span>Kadrovska</span>
-          <span>Upravljanje zaposlenima</span>
-        </div>
-      </a>
-      <a href="obracun.html" class="chip">
-        <span class="chip-icon">💰</span>
-        <div class="chip-label">
-          <span>Obračun</span>
-          <span>Platni spisak</span>
-        </div>
-      </a>
-      <a href="troskovi.html" class="chip">
-        <span class="chip-icon">📦</span>
-        <div class="chip-label">
-          <span>Troškovi</span>
-          <span>Praćenje troškova</span>
-        </div>
-      </a>
+<div class="cta-band">
+  <div class="cta-box">
+    <div>
+      <h2>Isprobajte Praćenje troškova odmah</h2>
+      <p>Prijavite se u aplikaciju ili nas kontaktirajte za više informacija.</p>
     </div>
-
     <div class="cta-row">
       <a href="https://dnd-app-pbzr.vercel.app/app.html" target="_blank" class="btn-primary">Prijava u aplikaciju</a>
       <a href="mailto:infodndsolutions@gmail.com" class="btn-secondary">
@@ -233,7 +214,27 @@ h1 em{font-style:normal;color:var(--blue-light);}
   </div>
 </div>
 
-<div class="bottom-bar">
+<div class="other-modules">
+  <h4>Ostali moduli</h4>
+  <div class="other-grid">
+    <a class="other-chip" href="kadrovska.html">
+      <span class="other-chip-icon">👥</span>
+      <div class="other-chip-label">
+        <span>Kadrovska</span>
+        <span>Upravljanje zaposlenima</span>
+      </div>
+    </a>
+    <a class="other-chip" href="obracun.html">
+      <span class="other-chip-icon">💰</span>
+      <div class="other-chip-label">
+        <span>Obračun plata</span>
+        <span>Platni spisak</span>
+      </div>
+    </a>
+  </div>
+</div>
+
+<footer class="site-footer">
   <span>© 2025 DND Solutions. Sva prava zadržana.</span>
   <div class="bottom-links">
     <a href="mailto:infodndsolutions@gmail.com">
@@ -245,7 +246,7 @@ h1 em{font-style:normal;color:var(--blue-light);}
       @dndsolutions2025
     </a>
   </div>
-</div>
+</footer>
 
 </body>
 </html>
