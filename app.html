@@ -945,7 +945,6 @@
       <div style="display:flex; gap:8px; flex-wrap:wrap;">
         <button type="button" class="primary" id="cardEditBtn">Izmijeni</button>
         <button type="button" class="secondary" id="cardPrintBtn">&#128424; Štampaj karticu</button>
-        <button type="button" class="secondary" id="cardGoBtn">&#127966; Godišnji odmor</button>
         <button type="button" class="secondary" id="cardDocGenBtn" style="display:none;">&#128196; Ugovor</button>
         <button type="button" class="secondary" id="cardSporazumBtn" style="display:none; color:#a33; border-color:#a33;">&#9888; Sporazumni prekid</button>
       </div>
@@ -2907,7 +2906,6 @@ function openEmployeeCard(index) {
   cardViewIndex = index;
   renderEmployeeCard(index);
   $('cardEditBtn').style.display = canEditAny('zaposleni') ? '' : 'none';
-  $('cardGoBtn').style.display = canView('godisnji_odmori') ? '' : 'none';
 
   // Dugme "Ugovor" - generiše direktno na osnovu Tip_ugovora
   const emp = employees[index];
@@ -2948,12 +2946,6 @@ $('cardEditBtn').addEventListener('click', () => {
   $('cardOverlay').classList.remove('open');
   cameFromCard = true;
   openModal(cardViewIndex);
-});
-
-$('cardGoBtn').addEventListener('click', () => {
-  if (cardViewIndex === null) return;
-  $('cardOverlay').classList.remove('open');
-  openGoModalForEmployee(cardViewIndex);
 });
 
 $('cardPrintBtn').addEventListener('click', () => {
