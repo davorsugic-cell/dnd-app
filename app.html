@@ -2925,17 +2925,309 @@ function openEmployeeCard(index) {
   $('cardOverlay').classList.add('open');
 }
 
+// ---------- Štampa "Ugovor o radu" kao pregled za štampu (bez download-a) ----------
+function printUgovorORadu(emp) {
+  const missing = getMissingFields('ugovor_o_radu', emp);
+  if (missing.length) {
+    alert(
+      `Nije moguće generisati dokument "Ugovor o radu" za "${emp.Ime_i_prezime}".\n\n` +
+      `Nedostaju sljedeći podaci:\n\n` +
+      missing.map(m => '- ' + m).join('\n') +
+      `\n\nOtvori "Izmijeni" za ovog zaposlenog, popuni nedostajuće podatke i pokušaj ponovo.`
+    );
+    logAction('Blokirano generisanje', emp.Ime_i_prezime, `Ugovor o radu - nedostaju: ${missing.join(', ')}`);
+    return;
+  }
+  const d = computeDerived(emp);
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) { toast('Browser je blokirao otvaranje prozora za štampu.'); return; }
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html><head><meta charset="UTF-8">
+    <title>Ugovor o radu - ${escapeXml(emp.Ime_i_prezime || '')}</title>
+    <style>
+      body { font-family: 'Times New Roman', Times, serif; padding: 40px 55px; color: #111; font-size: 13px; line-height: 1.55; }
+      h1 { text-align: center; font-size: 15px; margin: 4px 0; }
+      .naslov-forme { text-align: right; font-size: 12px; margin-bottom: 18px; }
+      .naslov-glavni { text-align: center; font-weight: bold; font-size: 16px; margin: 22px 0 4px; }
+      .naslov-tip { text-align: center; font-weight: bold; font-size: 14px; margin: 0 0 4px; }
+      .broj-protokola { text-align: center; font-size: 12px; margin-bottom: 22px; }
+      p { margin: 0 0 12px; text-align: justify; }
+      .tacka { margin-bottom: 12px; text-align: justify; }
+      .potpisi { margin-top: 46px; display: flex; justify-content: space-between; font-size: 13px; }
+      .potpisi .kol { width: 45%; }
+      .linija { border-top: 1px solid #111; margin-top: 40px; padding-top: 4px; text-align: center; }
+      @media print { body { padding: 15mm 20mm; } }
+    </style>
+    </head><body>
+    <div class="naslov-forme">ОБРАЗАЦ 1.</div>
+    <p>На основу члана 33. Закона о раду („Службени гласник Републике Српске“, бр. 1/16, 66/18, 91/21 – Одлука Уставног суда Републике Српске и 119/21) послодавац ${escapeXml(emp.Naziv_poslodavca)} (у даљем тексту: послодавац) и радник ${escapeXml(d.IME_PREZIME_VELIKO)} из ${escapeXml(emp.Mjesto_stanovanja)}, ${escapeXml(emp.Adresa)}, са завршеном школом/факултетом ${escapeXml(emp.Zavrsena_skola)}, и стручним/научним називом ${escapeXml(emp.Strucni_naziv)} (у даљем тексту: радник), закључују:</p>
+    <div class="naslov-glavni">УГОВОР О РАДУ</div>
+    <div class="naslov-tip">${escapeXml(d.Tip_ugovora_naslov)}</div>
+    <div class="broj-protokola">${escapeXml(d.Broj_protokola)}</div>
+    <div class="tacka">1. Овим уговором заснива се радни однос између послодавца и радника на ${escapeXml(d.Tip_ugovora_malo)} вријеме. ${escapeXml(d.Klauzula_trajanja)}</div>
+    <div class="tacka">Радник ступа у радни однос ${escapeXml(emp.Datum_stupanja_na_rad)} и распоређује се на радно мјесто, односно послове ${escapeXml(emp.Radno_mjesto)}, са стручном спремом ${escapeXml(emp.Strucna_sprema)}.</div>
+    <div class="tacka">2. Радно вријеме радника износи ${escapeXml(emp.Radno_vrijeme)} часова у радној седмици и распоређује се у шестодневној радној седмици, са смјенским распоредом радног времена.</div>
+    <div class="tacka">3. За редован рад и просјечно остварене резултате рада, радник остварује бруто плату у износу ${escapeXml(emp.Bruto_plata)} конвертибилних марака мјесечно.</div>
+    <div class="tacka">4. Основна плата радника, у складу са законом, колективним уговором и уговором о раду, увећава се по основама и у процентима утврђеним Законом о раду, колективним уговором и општим актима послодавца.</div>
+    <div class="tacka">5. Послодавац ће раднику плату исплаћивати мјесечно, а најкасније до 10. у мјесецу за претходни мјесец.</div>
+    <div class="tacka">6. Раднику или његовој породици припада помоћ у случајевима утврђеним Законом о раду, колективним уговором и општим актима послодавца.</div>
+    <div class="tacka">7. Право на одморе, одсуства, заштиту на раду, заштиту права из радног односа и сва друга права по основу рада која нису посебно уређена овим уговором, радник остварује у складу са одредбама Закона о раду, других прописа, колективних уговора и општих аката послодавца, са којима је радник упознат приликом закључивања овог уговора.</div>
+    <div class="tacka">8. Послодавац ће, у складу са Законом, радника пријавити на обавезне видове осигурања у Јединствени систем регистрације, контроле и наплате доприноса и раднику уручити копију пријаве.</div>
+    <div class="tacka">9. Послодавац може раднику отказати овај уговор у случајевима и на начин утврђен Законом о раду. У случајевима из члана 175. став 1. тачка 1, 3. и 4. Закона о раду, радник има право на отказни рок у трајању од 30 дана и отпремнину, у складу са Законом и колективним уговором.</div>
+    <div class="tacka">10. Радник може послодавцу отказати овај уговор без обавезе навођења разлога, достављањем отказа у писаном облику најкасније 15 дана прије дана који је радник навео као дан престанка радног односа.</div>
+    <div class="tacka">11. Послодавац може раднику понудити измјену садржаја овог уговора (анекс уговора) у случајевима прописаним Законом о раду.</div>
+    <div class="tacka">12. У случају да се након закључења овог уговора закључи колективни уговор код послодавца, односно његове измјене и допуне, или се на послодавца прошири примјена Општег или посебног колективног уговора, којима су прописана повољнија права по основу рада или њихов обим у односу на одредбе овог уговора, на међусобна права и обавезе радника и послодавца ће се примјењивати одредбе које су повољније за радника.</div>
+    <div class="tacka">13. Овај уговор је закључен ${escapeXml(emp.Datum_zakljucenja)} године у ${escapeXml(emp.Mjesto_zakljucenja)}.</div>
+    <div class="tacka">14. Један примјерак Уговора уручен је раднику прије ступања радника на рад.</div>
+    <p style="margin-top:30px; font-weight:bold; text-align:center;">Уговорне стране</p>
+    <div class="potpisi">
+      <div class="kol">
+        <div>Радник</div>
+        <div class="linija">${escapeXml(emp.Ime_i_prezime)}</div>
+      </div>
+      <div class="kol">
+        <div>За послодавца</div>
+        <div class="linija">${escapeXml(emp.Zastupnik_poslodavca)}</div>
+      </div>
+    </div>
+    </body></html>
+  `);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
+  toast('Otvoren pregled za štampu: Ugovor o radu');
+  logAction('Generisan dokument (štampa)', emp.Ime_i_prezime, 'Ugovor o radu');
+}
+
+// ---------- Štampa "Ugovor o dopunskom radu" kao pregled za štampu (bez download-a) ----------
+function printUgovorDopunski(emp) {
+  const missing = getMissingFields('ugovor_dopunski', emp);
+  if (missing.length) {
+    alert(
+      `Nije moguće generisati dokument "Ugovor o dopunskom radu" za "${emp.Ime_i_prezime}".\n\n` +
+      `Nedostaju sljedeći podaci:\n\n` +
+      missing.map(m => '- ' + m).join('\n') +
+      `\n\nOtvori "Izmijeni" za ovog zaposlenog, popuni nedostajuće podatke i pokušaj ponovo.`
+    );
+    logAction('Blokirano generisanje', emp.Ime_i_prezime, `Ugovor o dopunskom radu - nedostaju: ${missing.join(', ')}`);
+    return;
+  }
+  const d = computeDerived(emp);
+  const rokTrajanja = String(emp.Datum_prestanka_ugovora || '').trim()
+    ? `Poslove iz tačke 2. ovog ugovora izvršilac posla će obavljati do ${escapeXml(emp.Datum_prestanka_ugovora)}. godine.`
+    : `Poslove iz tačke 2. ovog ugovora izvršilac posla će obavljati na neodređeno vrijeme.`;
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) { toast('Browser je blokirao otvaranje prozora za štampu.'); return; }
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html><head><meta charset="UTF-8">
+    <title>Ugovor o dopunskom radu - ${escapeXml(emp.Ime_i_prezime || '')}</title>
+    <style>
+      body { font-family: 'Times New Roman', Times, serif; padding: 40px 55px; color: #111; font-size: 13px; line-height: 1.55; }
+      .zaglavlje { margin-bottom: 24px; }
+      .zaglavlje div { margin: 0; }
+      .naslov-glavni { text-align: center; font-weight: bold; font-size: 16px; margin: 10px 0 22px; }
+      p { margin: 0 0 12px; text-align: justify; }
+      .tacka { margin-bottom: 12px; text-align: justify; }
+      .potpisi { margin-top: 46px; display: flex; justify-content: space-between; font-size: 13px; }
+      .potpisi .kol { width: 45%; }
+      .linija { border-top: 1px solid #111; margin-top: 40px; padding-top: 4px; text-align: center; }
+      @media print { body { padding: 15mm 20mm; } }
+    </style>
+    </head><body>
+    <div class="zaglavlje">
+      <div>${escapeXml(emp.Naziv_poslodavca)}</div>
+      <div>${escapeXml(emp.Adresa_poslodavca)}</div>
+      <div>JIB: ${escapeXml(emp.JIB_poslodavca)}</div>
+      <div>Broj: ${escapeXml(d.Broj_protokola)}</div>
+      <div>${escapeXml(emp.Mjesto_zakljucenja)}, ${escapeXml(emp.Datum_zakljucenja)}</div>
+    </div>
+    <div class="naslov-glavni">UGOVOR O DOPUNSKOM RADU</div>
+    <p>Na osnovu člana 207. Zakona o radu („Službeni glasnik Republike Srpske“, br. 01/16 i 66/18), poslodavac ${escapeXml(emp.Naziv_poslodavca)}, ${escapeXml(emp.Adresa_poslodavca)} (u daljem tekstu: poslodavac), kojeg zastupa ${escapeXml(emp.Zastupnik_poslodavca)}, i ${escapeXml(emp.Ime_i_prezime)}, JMBG ${escapeXml(emp.JMBG)}, iz ${escapeXml(emp.Mjesto_stanovanja)}, ${escapeXml(emp.Adresa)}, sa završenom ${escapeXml(emp.Zavrsena_skola)} i stručnom spremom ${escapeXml(emp.Strucna_sprema)} (u daljem tekstu: izvršilac posla), zaključuju:</p>
+    <div class="tacka">1. Izvršilac posla, koji je zaposlen sa punim radnim vremenom kod drugog poslodavca, prima se na dopunski rad kod poslodavca sa danom ${escapeXml(emp.Datum_stupanja_na_rad)}.</div>
+    <div class="tacka">2. Izvršilac posla se obavezuje da će za poslodavca obavljati poslove na radnom mjestu ${escapeXml(emp.Radno_mjesto)}, u organizacionoj jedinici ${escapeXml(emp.Odjel)}.</div>
+    <div class="tacka">3. ${rokTrajanja}</div>
+    <div class="tacka">4. Izvršilac posla će, u skladu sa rasporedom kod poslodavca, raditi ${escapeXml(emp.Radno_vrijeme)} časova u radnoj sedmici.</div>
+    <div class="tacka">5. Poslodavac će izvršiocu posla na ime naknade za obavljeni posao, koja nema karakter plate, isplaćivati iznos od ${escapeXml(emp.Neto_plata)} KM mjesečno. Ugovoreni iznos naknade u sebi sadrži porez na dohodak. Naknada će se isplaćivati mjesečno, a najkasnije do 10. u mjesecu za prethodni mjesec. Porez, doprinose i ostale zakonom propisane obaveze na ugovorenu naknadu snosi poslodavac.</div>
+    <div class="tacka">6. Izvršilac posla pravo na zaštitu na radu i sva druga prava po osnovu rada izvan radnog odnosa, koja nisu posebno uređena ovim ugovorom, ostvaruje u skladu sa odgovarajućim odredbama Zakona o radu, drugih propisa, kolektivnih ugovora te opštih akata poslodavca, sa kojima je izvršilac posla upoznat prilikom zaključivanja ovog ugovora.</div>
+    <div class="tacka">7. Poslodavac će, u skladu sa zakonom, izvršioca posla prijaviti na propisane vidove osiguranja u Jedinstveni sistem registracije, kontrole i naplate doprinosa prije stupanja na rad, i izvršiocu posla uručiti kopiju izvršene prijave.</div>
+    <div class="tacka">8. Stručni nadzor i praćenje rada izvršioca posla u svrhu ocjenjivanja vršiće ${escapeXml(emp.Zastupnik_poslodavca)}.</div>
+    <div class="tacka">9. Poslodavac, kao i izvršilac posla, imaju pravo da otkažu ovaj ugovor i prije isteka roka na koji je ugovor zaključen, uz otkazni rok od sedam dana.</div>
+    <div class="tacka">10. Ovaj ugovor je zaključen dana ${escapeXml(emp.Datum_zakljucenja)}. godine u ${escapeXml(emp.Mjesto_zakljucenja)}.</div>
+    <p style="margin-top:30px; font-weight:bold; text-align:center;">Ugovorne strane</p>
+    <div class="potpisi">
+      <div class="kol">
+        <div>Izvršilac posla:</div>
+        <div class="linija">${escapeXml(emp.Ime_i_prezime)}</div>
+      </div>
+      <div class="kol">
+        <div>Za poslodavca:</div>
+        <div class="linija">${escapeXml(emp.Zastupnik_poslodavca)}</div>
+      </div>
+    </div>
+    </body></html>
+  `);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
+  toast('Otvoren pregled za štampu: Ugovor o dopunskom radu');
+  logAction('Generisan dokument (štampa)', emp.Ime_i_prezime, 'Ugovor o dopunskom radu');
+}
+
+// ---------- Štampa "Sporazum o prestanku" kao pregled za štampu (bez download-a) ----------
+function printSporazumPrestanak(emp) {
+  const missing = getMissingFields('sporazum_prestanak', emp);
+  if (missing.length) {
+    alert(
+      `Nije moguće generisati dokument "Sporazum o prestanku" za "${emp.Ime_i_prezime}".\n\n` +
+      `Nedostaju sljedeći podaci:\n\n` +
+      missing.map(m => '- ' + m).join('\n') +
+      `\n\nOtvori "Izmijeni" za ovog zaposlenog, popuni nedostajuće podatke i pokušaj ponovo.`
+    );
+    logAction('Blokirano generisanje', emp.Ime_i_prezime, `Sporazum o prestanku - nedostaju: ${missing.join(', ')}`);
+    return;
+  }
+  const d = computeDerived(emp);
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) { toast('Browser je blokirao otvaranje prozora za štampu.'); return; }
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html><head><meta charset="UTF-8">
+    <title>Sporazum o prestanku - ${escapeXml(emp.Ime_i_prezime || '')}</title>
+    <style>
+      body { font-family: 'Times New Roman', Times, serif; padding: 40px 55px; color: #111; font-size: 13px; line-height: 1.55; }
+      .zaglavlje { margin-bottom: 24px; }
+      .zaglavlje div { margin: 0; }
+      .naslov-glavni { text-align: center; font-weight: bold; font-size: 16px; margin: 10px 0 22px; }
+      p { margin: 0 0 12px; text-align: justify; }
+      .potpisi { margin-top: 46px; display: flex; justify-content: space-between; font-size: 13px; }
+      .potpisi .kol { width: 45%; }
+      .linija { border-top: 1px solid #111; margin-top: 40px; padding-top: 4px; text-align: center; }
+      @media print { body { padding: 15mm 20mm; } }
+    </style>
+    </head><body>
+    <div class="zaglavlje">
+      <div>${escapeXml(emp.Naziv_poslodavca)}</div>
+      <div>${escapeXml(emp.Adresa_poslodavca)}</div>
+      <div>JIB: ${escapeXml(emp.JIB_poslodavca)}</div>
+      <div>Broj: ${escapeXml(d.Broj_protokola)}</div>
+      <div>${escapeXml(emp.Mjesto_zakljucenja)}, ${escapeXml(emp.Datum_zakljucenja)}</div>
+    </div>
+    <div class="naslov-glavni">SPORAZUM O PRESTANKU RADNOG ODNOSA</div>
+    <p>Na osnovu člana 175. Zakona o radu („Službeni glasnik Republike Srpske“, br. 01/16), ${escapeXml(emp.Naziv_poslodavca)}, ${escapeXml(emp.Adresa_poslodavca)} (u daljem tekstu: poslodavac), kojeg zastupa ${escapeXml(emp.Zastupnik_poslodavca)}, i radnik ${escapeXml(emp.Ime_i_prezime)}, JMBG ${escapeXml(emp.JMBG)}, iz ${escapeXml(emp.Mjesto_stanovanja)}, raspoređen na radno mjesto ${escapeXml(emp.Radno_mjesto)}, sporazumno su se dogovorili da raskinu Ugovor o radu zaključen dana ${escapeXml(emp.Datum_stupanja_na_rad)}. godine, zaključno sa danom ${escapeXml(emp.Datum_prestanka_ugovora)}. godine.</p>
+    <p>Radnik i poslodavac saglasno izjavljuju da nemaju međusobnih nepodmirenih obaveza po osnovu radnog odnosa, izuzev onih koje su izričito navedene u ovom sporazumu.</p>
+    <div class="potpisi">
+      <div class="kol">
+        <div>Radnik:</div>
+        <div class="linija">${escapeXml(emp.Ime_i_prezime)}</div>
+      </div>
+      <div class="kol">
+        <div>Za poslodavca:</div>
+        <div class="linija">${escapeXml(emp.Zastupnik_poslodavca)}</div>
+      </div>
+    </div>
+    </body></html>
+  `);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
+  toast('Otvoren pregled za štampu: Sporazum o prestanku');
+  logAction('Generisan dokument (štampa)', emp.Ime_i_prezime, 'Sporazum o prestanku');
+}
+
+// ---------- Štampa "Rješenje o godišnjem odmoru" kao pregled za štampu (bez download-a) ----------
+function printRjesenjeGo(emp) {
+  const missing = getMissingFields('rjesenje_go', emp);
+  if (missing.length) {
+    alert(
+      `Nije moguće generisati dokument "Rješenje o godišnjem odmoru" za "${emp.Ime_i_prezime}".\n\n` +
+      `Nedostaju sljedeći podaci:\n\n` +
+      missing.map(m => '- ' + m).join('\n')
+    );
+    logAction('Blokirano generisanje', emp.Ime_i_prezime, `Rješenje o GO - nedostaju: ${missing.join(', ')}`);
+    return;
+  }
+  const d = computeDerived(emp);
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) { toast('Browser je blokirao otvaranje prozora za štampu.'); return; }
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html><head><meta charset="UTF-8">
+    <title>Rješenje o godišnjem odmoru - ${escapeXml(emp.Ime_i_prezime || '')}</title>
+    <style>
+      body { font-family: 'Times New Roman', Times, serif; padding: 40px 55px; color: #111; font-size: 13px; line-height: 1.55; }
+      .zaglavlje { margin-bottom: 24px; }
+      .zaglavlje div { margin: 0; }
+      .naslov-glavni { text-align: center; font-weight: bold; font-size: 16px; margin: 10px 0 22px; }
+      .rimski { text-align: center; font-weight: bold; margin: 18px 0 8px; }
+      p { margin: 0 0 12px; text-align: justify; }
+      .dostaviti { margin-top: 26px; }
+      .dostaviti div { margin: 0; }
+      .potpisi { margin-top: 46px; display: flex; justify-content: space-between; font-size: 13px; }
+      .potpisi .kol { width: 45%; }
+      .linija { border-top: 1px solid #111; margin-top: 40px; padding-top: 4px; text-align: center; }
+      @media print { body { padding: 15mm 20mm; } }
+    </style>
+    </head><body>
+    <div class="zaglavlje">
+      <div>${escapeXml(emp.Naziv_poslodavca)}</div>
+      <div>${escapeXml(emp.Adresa_poslodavca)}</div>
+      <div>Broj: ${escapeXml(d.Broj_protokola)}</div>
+      <div>${escapeXml(emp.Mjesto_zakljucenja)}, ${escapeXml(emp.GO_datum_izrade)}</div>
+    </div>
+    <p>Na osnovu Zakona o radu („Službeni glasnik Republike Srpske“, br. 01/16 i 66/18), a u skladu sa Opštim kolektivnim ugovorom, ${escapeXml(emp.Zastupnik_poslodavca)}, u ime ${escapeXml(emp.Naziv_poslodavca)}, donosi:</p>
+    <div class="naslov-glavni">RJEŠENJE O GODIŠNJEM ODMORU</div>
+    <div class="rimski">I</div>
+    <p>Radniku ${escapeXml(emp.Ime_i_prezime)}, raspoređenom na poslove ${escapeXml(emp.Radno_mjesto)}, utvrđuje se pravo na godišnji odmor u trajanju od ${escapeXml(emp.GO_broj_dana)} radnih dana.</p>
+    <div class="rimski">II</div>
+    <p>Prvi dio godišnjeg odmora, u trajanju od ${escapeXml(emp.GO_prvi_dio_dana)} radnih dana, radnik će iskoristiti u periodu od ${escapeXml(emp.GO_datum_od)} do ${escapeXml(emp.GO_datum_do)} godine, te je radnik dužan javiti se na posao ${escapeXml(emp.GO_datum_javljanja)} godine.</p>
+    <p>Drugi dio godišnjeg odmora radnik će iskoristiti prema vlastitim potrebama, u dogovoru sa poslodavcem.</p>
+    <div class="rimski">III</div>
+    <p>Za vrijeme korištenja godišnjeg odmora radnik ima pravo na naknadu plate u visini 100% prosječne plate u prethodna tri mjeseca.</p>
+    <div class="dostaviti">
+      <div>Dostaviti:</div>
+      <div>- radniku</div>
+      <div>- obračun ličnih dohodaka</div>
+      <div>- dosije radnika</div>
+    </div>
+    <div class="potpisi">
+      <div class="kol">
+        <div>Poslodavac:</div>
+        <div class="linija">${escapeXml(emp.Naziv_poslodavca)} / ${escapeXml(emp.Zastupnik_poslodavca)}</div>
+      </div>
+      <div class="kol">
+        <div>Radnik:</div>
+        <div class="linija">${escapeXml(emp.Ime_i_prezime)}</div>
+      </div>
+    </div>
+    </body></html>
+  `);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
+  toast('Otvoren pregled za štampu: Rješenje o godišnjem odmoru');
+  logAction('Generisan dokument (štampa)', emp.Ime_i_prezime, 'Rješenje o godišnjem odmoru');
+}
+
 $('cardDocGenBtn').addEventListener('click', () => {
   if (cardViewIndex === null) return;
   const emp = employees[cardViewIndex];
   const templateKey = $('cardDocGenBtn').dataset.templateKey;
-  if (templateKey) generateDoc(templateKey, emp);
+  if (!templateKey) return;
+  if (templateKey === 'ugovor_o_radu') {
+    printUgovorORadu(emp);
+  } else if (templateKey === 'ugovor_dopunski') {
+    printUgovorDopunski(emp);
+  } else {
+    generateDoc(templateKey, emp);
+  }
 });
 
 $('cardSporazumBtn').addEventListener('click', () => {
   if (cardViewIndex === null) return;
   const emp = employees[cardViewIndex];
-  generateDoc('sporazum_prestanak', emp);
+  printSporazumPrestanak(emp);
 });
 
 $('cardCloseBtn').addEventListener('click', () => $('cardOverlay').classList.remove('open'));
@@ -5395,7 +5687,7 @@ async function generateRjesenjeGo(emp, pravoDana, brojDanaOvogUnosa, datumOd, da
     GO_datum_javljanja: datumDo ? sljedeciRadniDanDmy(datumDo, firmaId) : '',
     GO_datum_izrade: todayDmy(),
   });
-  await generateDoc('rjesenje_go', empZaDokument);
+  printRjesenjeGo(empZaDokument);
 }
 
 // GO podešavanja overlay (Šifarnici)
