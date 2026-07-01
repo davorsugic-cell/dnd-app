@@ -2994,8 +2994,11 @@ function printUgovorORadu(emp) {
     </body></html>
   `);
   printWindow.document.close();
-  printWindow.focus();
-  printWindow.print();
+  printWindow.onload = () => {
+    printWindow.focus();
+    printWindow.print();
+  };
+  setTimeout(() => printWindow.focus(), 100);
   toast('Otvoren pregled za štampu: Ugovor o radu');
   logAction('Generisan dokument (štampa)', emp.Ime_i_prezime, 'Ugovor o radu');
 }
@@ -3069,8 +3072,11 @@ function printUgovorDopunski(emp) {
     </body></html>
   `);
   printWindow.document.close();
-  printWindow.focus();
-  printWindow.print();
+  printWindow.onload = () => {
+    printWindow.focus();
+    printWindow.print();
+  };
+  setTimeout(() => printWindow.focus(), 100);
   toast('Otvoren pregled za štampu: Ugovor o dopunskom radu');
   logAction('Generisan dokument (štampa)', emp.Ime_i_prezime, 'Ugovor o dopunskom radu');
 }
@@ -3130,8 +3136,11 @@ function printSporazumPrestanak(emp) {
     </body></html>
   `);
   printWindow.document.close();
-  printWindow.focus();
-  printWindow.print();
+  printWindow.onload = () => {
+    printWindow.focus();
+    printWindow.print();
+  };
+  setTimeout(() => printWindow.focus(), 100);
   toast('Otvoren pregled za štampu: Sporazum o prestanku');
   logAction('Generisan dokument (štampa)', emp.Ime_i_prezime, 'Sporazum o prestanku');
 }
@@ -3204,8 +3213,11 @@ function printRjesenjeGo(emp) {
     </body></html>
   `);
   printWindow.document.close();
-  printWindow.focus();
-  printWindow.print();
+  printWindow.onload = () => {
+    printWindow.focus();
+    printWindow.print();
+  };
+  setTimeout(() => printWindow.focus(), 100);
   toast('Otvoren pregled za štampu: Rješenje o godišnjem odmoru');
   logAction('Generisan dokument (štampa)', emp.Ime_i_prezime, 'Rješenje o godišnjem odmoru');
 }
@@ -3263,8 +3275,11 @@ $('cardPrintBtn').addEventListener('click', () => {
     </body></html>
   `);
   printWindow.document.close();
-  printWindow.focus();
-  printWindow.print();
+  printWindow.onload = () => {
+    printWindow.focus();
+    printWindow.print();
+  };
+  setTimeout(() => printWindow.focus(), 100);
 });
 
 function openModal(index) {
@@ -6166,8 +6181,11 @@ function stampajSihtericu(empIndexes, godina, mjesec) {
     </style>
     </head><body>${sviHtml}</body></html>`);
   printWindow.document.close();
-  printWindow.focus();
-  printWindow.print();
+  printWindow.onload = () => {
+    printWindow.focus();
+    printWindow.print();
+  };
+  setTimeout(() => printWindow.focus(), 100);
 }
 
 $('sihStampajJednogBtn').addEventListener('click', () => {
