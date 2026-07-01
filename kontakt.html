@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kadrovska — DND Solutions</title>
+<title>Kontakt — DND Solutions</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -38,44 +38,39 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:cen
 .hamburger span{width:20px;height:2px;background:#fff;border-radius:2px;}
 .mobile-menu{display:none;}
 
-/* -- Module hero -- */
-.mhero{padding:150px 48px 70px;max-width:920px;margin:0 auto;position:relative;overflow:hidden;}
+/* -- Hero -- */
+.mhero{padding:150px 48px 50px;max-width:920px;margin:0 auto;position:relative;overflow:hidden;}
 .glow{position:absolute;top:0;left:50%;transform:translateX(-50%);width:700px;height:400px;background:radial-gradient(ellipse,rgba(37,99,235,0.15) 0%,transparent 70%);pointer-events:none;}
 .back-link{display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,0.45);text-decoration:none;font-size:13px;margin-bottom:28px;transition:color 0.2s;}
 .back-link:hover{color:#fff;}
 .back-link svg{width:14px;height:14px;}
-.mhero-icon{width:64px;height:64px;border-radius:16px;background:rgba(37,99,235,0.14);border:1px solid rgba(37,99,235,0.3);display:flex;align-items:center;justify-content:center;font-size:30px;margin-bottom:26px;}
+.mhero-icon{width:64px;height:64px;border-radius:16px;background:rgba(37,99,235,0.14);border:1px solid rgba(37,99,235,0.3);display:flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:26px;}
 .mhero h1{font-size:clamp(28px,4vw,42px);font-weight:700;line-height:1.15;letter-spacing:-0.02em;max-width:640px;margin-bottom:16px;}
 .mhero .sub{font-size:16px;color:rgba(255,255,255,0.6);max-width:560px;line-height:1.65;}
 
-/* -- Feature grid -- */
-.features{max-width:920px;margin:0 auto;padding:0 48px 90px;display:grid;grid-template-columns:repeat(2,1fr);gap:16px;}
-.feature{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:26px 24px;}
-.feature-icon{font-size:22px;margin-bottom:14px;display:block;}
-.feature h3{font-size:15px;font-weight:600;margin-bottom:8px;letter-spacing:-0.01em;}
-.feature p{font-size:13.5px;color:rgba(255,255,255,0.5);line-height:1.6;}
+/* -- Contact grid -- */
+.contact-grid{max-width:920px;margin:0 auto;padding:10px 48px 110px;display:grid;grid-template-columns:1fr 1.35fr;gap:44px;position:relative;}
+.contact-info{display:flex;flex-direction:column;gap:14px;}
+.contact-card{display:flex;align-items:center;gap:14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:20px 22px;text-decoration:none;color:#fff;transition:border-color 0.2s,background 0.2s;}
+.contact-card:hover{background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.16);}
+.cc-icon{width:42px;height:42px;border-radius:11px;background:rgba(37,99,235,0.16);border:1px solid rgba(37,99,235,0.3);display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0;}
+.cc-icon svg{width:19px;height:19px;}
+.cc-label span:first-child{display:block;font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px;}
+.cc-label span:last-child{display:block;font-size:14.5px;font-weight:500;word-break:break-word;}
 
-/* -- CTA band -- */
-.cta-band{max-width:920px;margin:0 auto;padding:0 48px 90px;}
-.cta-box{background:linear-gradient(135deg,rgba(37,99,235,0.14),rgba(37,99,235,0.04));border:1px solid rgba(37,99,235,0.25);border-radius:18px;padding:40px 44px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;}
-.cta-box h2{font-size:20px;font-weight:600;margin-bottom:6px;letter-spacing:-0.01em;}
-.cta-box p{font-size:13.5px;color:rgba(255,255,255,0.55);}
-.cta-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
-.btn-primary{background:var(--blue);color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:500;transition:background 0.2s;white-space:nowrap;}
-.btn-primary:hover{background:var(--blue-light);}
-.btn-secondary{color:rgba(255,255,255,0.6);text-decoration:none;font-size:14px;display:flex;align-items:center;gap:6px;transition:color 0.2s;white-space:nowrap;}
-.btn-secondary:hover{color:#fff;}
-.btn-secondary svg{width:14px;height:14px;}
-
-/* -- Other modules -- */
-.other-modules{max-width:920px;margin:0 auto;padding:0 48px 100px;}
-.other-modules h4{font-size:12px;font-weight:600;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:16px;}
-.other-grid{display:flex;gap:14px;flex-wrap:wrap;}
-.other-chip{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:12px;padding:14px 20px;min-width:200px;text-decoration:none;transition:border-color 0.2s,background 0.2s;flex:1;}
-.other-chip:hover{background:rgba(255,255,255,0.07);border-color:rgba(255,255,255,0.15);}
-.other-chip-icon{font-size:20px;}
-.other-chip-label span:first-child{display:block;font-size:12px;font-weight:600;color:#fff;letter-spacing:0.05em;text-transform:uppercase;}
-.other-chip-label span:last-child{display:block;font-size:11px;color:rgba(255,255,255,0.38);margin-top:2px;}
+.contact-form{display:flex;flex-direction:column;gap:18px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:18px;padding:32px;}
+.form-title{font-size:15px;font-weight:600;margin-bottom:2px;}
+.form-row{display:flex;flex-direction:column;gap:7px;}
+.form-row label{font-size:12.5px;color:rgba(255,255,255,0.55);}
+.req{color:#f87171;}
+.form-row input,.form-row textarea{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.13);border-radius:9px;padding:11px 14px;color:#fff;font-family:inherit;font-size:14px;outline:none;transition:border-color 0.2s,background 0.2s;width:100%;}
+.form-row input::placeholder,.form-row textarea::placeholder{color:rgba(255,255,255,0.3);}
+.form-row input:focus,.form-row textarea:focus{border-color:var(--blue);background:rgba(255,255,255,0.06);}
+.form-row textarea{resize:vertical;min-height:120px;}
+.form-cols{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.btn-submit{align-self:flex-start;background:var(--blue);color:#fff;border:none;padding:13px 30px;border-radius:9px;font-size:14px;font-weight:500;cursor:pointer;transition:background 0.2s;font-family:inherit;}
+.btn-submit:hover{background:var(--blue-light);}
+.form-note{font-size:11.5px;color:rgba(255,255,255,0.35);line-height:1.5;}
 
 footer.site-footer{display:flex;align-items:center;justify-content:space-between;padding:18px 48px;height:auto;background:rgba(255,255,255,0.02);border-top:1px solid rgba(255,255,255,0.06);font-size:12px;color:rgba(255,255,255,0.35);flex-wrap:wrap;gap:10px;}
 .bottom-links{display:flex;align-items:center;gap:20px;}
@@ -91,13 +86,11 @@ footer.site-footer{display:flex;align-items:center;justify-content:space-between
   .nav-logo-text span:last-child{display:none;}
   .hamburger{display:flex;}
 
-  .mhero{padding:96px 20px 50px;}
+  .mhero{padding:96px 20px 30px;}
   .glow{width:500px;height:300px;}
-  .features{grid-template-columns:1fr;padding:0 20px 60px;}
-  .cta-band{padding:0 20px 60px;}
-  .cta-box{flex-direction:column;align-items:flex-start;padding:28px 24px;}
-  .other-modules{padding:0 20px 70px;}
-  .other-grid{flex-direction:column;}
+  .contact-grid{grid-template-columns:1fr;padding:10px 20px 80px;gap:28px;}
+  .contact-form{padding:24px 20px;}
+  .form-cols{grid-template-columns:1fr;gap:14px;}
   footer.site-footer{flex-direction:column;align-items:flex-start;padding:16px 20px;}
 
   .mobile-menu{display:none;position:fixed;top:52px;left:0;right:0;background:rgba(13,27,53,0.98);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.08);z-index:99;padding:8px 18px 18px;flex-direction:column;}
@@ -124,10 +117,10 @@ footer.site-footer{display:flex;align-items:center;justify-content:space-between
   </a>
 
   <div class="nav-links">
-    <a href="kadrovska.html" class="active">Kadrovska</a>
+    <a href="kadrovska.html">Kadrovska</a>
     <a href="obracun.html">Obračun plata</a>
     <a href="troskovi.html">Troškovi</a>
-    <a href="kontakt.html">Kontakt</a>
+    <a href="kontakt.html" class="active">Kontakt</a>
   </div>
 
   <div class="nav-right">
@@ -170,78 +163,58 @@ footer.site-footer{display:flex;align-items:center;justify-content:space-between
     <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
     Nazad na početnu
   </a>
-  <div class="mhero-icon">👥</div>
-  <h1>Kadrovska evidencija na jednom mjestu</h1>
-  <p class="sub">Svi podaci o zaposlenima, firmama i poslovnicama — uredno, ažurno i uvijek dostupno, bez papirologije i razbacanih Excel fajlova.</p>
+  <div class="mhero-icon">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" width="28" height="28"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+  </div>
+  <h1>Kontaktirajte nas</h1>
+  <p class="sub">Imate pitanje o platformi ili želite zakazati demo? Pišite nam direktno ili pošaljite upit putem forme.</p>
 </div>
 
-<div class="features">
-  <div class="feature">
-    <span class="feature-icon">📁</span>
-    <h3>Matični podaci zaposlenih</h3>
-    <p>Lični podaci, stručna sprema, radno mjesto i istorija zaposlenja - sve na jednom mjestu za svakog radnika.</p>
-  </div>
-  <div class="feature">
-    <span class="feature-icon">🏢</span>
-    <h3>Firme i poslovnice</h3>
-    <p>Upravljanje sa više pravnih lica i lokacija iz jedne aplikacije, sa jasnom podjelom pristupa po korisnicima.</p>
-  </div>
-  <div class="feature">
-    <span class="feature-icon">📄</span>
-    <h3>Generisanje ugovora</h3>
-    <p>Ugovor o radu, dopunski rad, sporazum o prestanku i rješenje o godišnjem odmoru - automatski popunjeni podacima zaposlenog.</p>
-  </div>
-  <div class="feature">
-    <span class="feature-icon">📅</span>
-    <h3>Godišnji odmori</h3>
-    <p>Praćenje prava, iskorištenih i preostalih dana godišnjeg odmora po zaposlenom i po godini.</p>
-  </div>
-  <div class="feature">
-    <span class="feature-icon">⏰</span>
-    <h3>Istek ugovora</h3>
-    <p>Pregled i upozorenja na ugovore kojima ističe rok, prije nego što postanu problem.</p>
-  </div>
-  <div class="feature">
-    <span class="feature-icon">🔐</span>
-    <h3>Pristup po ulogama</h3>
-    <p>Administratori, firme i poslovnice - svako vidi tačno onaj dio podataka koji mu pripada.</p>
-  </div>
-</div>
-
-<div class="cta-band">
-  <div class="cta-box">
-    <div>
-      <h2>Isprobajte Kadrovsku evidenciju odmah</h2>
-      <p>Prijavite se u aplikaciju ili nas kontaktirajte za više informacija.</p>
-    </div>
-    <div class="cta-row">
-      <a href="https://dnd-app-pbzr.vercel.app/app.html" target="_blank" class="btn-primary">Prijava u aplikaciju</a>
-      <a href="mailto:infodndsolutions@gmail.com" class="btn-secondary">
-        Kontaktirajte nas
-        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-      </a>
-    </div>
-  </div>
-</div>
-
-<div class="other-modules">
-  <h4>Ostali moduli</h4>
-  <div class="other-grid">
-    <a class="other-chip" href="obracun.html">
-      <span class="other-chip-icon">💰</span>
-      <div class="other-chip-label">
-        <span>Obračun plata</span>
-        <span>Platni spisak</span>
+<div class="contact-grid">
+  <div class="contact-info">
+    <a href="mailto:infodndsolutions@gmail.com" class="contact-card">
+      <div class="cc-icon">
+        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 7 10-7"/></svg>
+      </div>
+      <div class="cc-label">
+        <span>Email</span>
+        <span>infodndsolutions@gmail.com</span>
       </div>
     </a>
-    <a class="other-chip" href="troskovi.html">
-      <span class="other-chip-icon">📦</span>
-      <div class="other-chip-label">
-        <span>Troškovi</span>
-        <span>Praćenje troškova</span>
+    <a href="https://www.instagram.com/dndsolutions2025/" target="_blank" class="contact-card">
+      <div class="cc-icon">
+        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
+      </div>
+      <div class="cc-label">
+        <span>Instagram</span>
+        <span>@dndsolutions2025</span>
       </div>
     </a>
   </div>
+
+  <form class="contact-form" action="mailto:infodndsolutions@gmail.com" method="post" enctype="text/plain">
+    <div class="form-title">Pošaljite upit</div>
+    <div class="form-cols">
+      <div class="form-row">
+        <label for="k_ime">Ime i prezime <span class="req">*</span></label>
+        <input type="text" id="k_ime" name="Ime_i_prezime" placeholder="Vaše ime i prezime" required>
+      </div>
+      <div class="form-row">
+        <label for="k_telefon">Telefon <span class="req">*</span></label>
+        <input type="tel" id="k_telefon" name="Telefon" placeholder="npr. 065 123 456" required>
+      </div>
+    </div>
+    <div class="form-row">
+      <label for="k_email">Email <span class="req">*</span></label>
+      <input type="email" id="k_email" name="Email" placeholder="vas@email.com" required>
+    </div>
+    <div class="form-row">
+      <label for="k_poruka">Poruka <span class="req">*</span></label>
+      <textarea id="k_poruka" name="Poruka" placeholder="Opišite vaš upit..." required></textarea>
+    </div>
+    <button type="submit" class="btn-submit">Pošalji upit</button>
+    <p class="form-note">Klikom na "Pošalji upit" otvoriće se vaš email program sa unaprijed popunjenom porukom upućenom na infodndsolutions@gmail.com.</p>
+  </form>
 </div>
 
 <footer class="site-footer">
