@@ -414,6 +414,16 @@
     font-family: Georgia, "Times New Roman", serif;
     margin: 0 0 14px; color: var(--accent); font-size: 20px;
   }
+  /* Navigacijske "stranice" (Firme, Korisnici, Izvještaji, itd.) - pun ekran kao Zaposleni, ne popup */
+  .overlay.navpage {
+    position: static; background: none; display: none; padding: 0; z-index: 1;
+  }
+  .overlay.navpage.open { display: block; }
+  .overlay.navpage .modal {
+    max-width: 100%; width: 100%; max-height: none; overflow: visible;
+  }
+  .overlay.navpage .modal-header { position: static; }
+  .overlay.navpage .modal-body { overflow: visible; }
   .section {
     background: var(--field-bg); border: 1px solid var(--line); border-radius: 8px;
     padding: 14px 16px; margin-bottom: 14px;
@@ -1038,7 +1048,7 @@
 </div>
 
 <!-- Istek ugovora Modal -->
-<div class="overlay" id="expiryOverlay">
+<div class="overlay navpage" id="expiryOverlay">
   <div class="modal" style="max-width:980px;">
     <div class="modal-header">
       <h2>Istek ugovora</h2>
@@ -1074,7 +1084,7 @@
 </div>
 
 <!-- Izvještaji Modal -->
-<div class="overlay" id="reportsOverlay">
+<div class="overlay navpage" id="reportsOverlay">
   <div class="modal" style="max-width:980px;">
     <div class="modal-header">
       <h2>Izvještaji</h2>
@@ -1116,7 +1126,7 @@
 </div>
 
 <!-- Firme i poslovnice Modal -->
-<div class="overlay" id="firmeOverlay">
+<div class="overlay navpage" id="firmeOverlay">
   <div class="modal" style="max-width:920px;">
     <div class="modal-header">
       <h2>Firme i poslovnice</h2>
@@ -1150,7 +1160,7 @@
 </div>
 
 <!-- Komitenti Modal -->
-<div class="overlay" id="komitentiOverlay">
+<div class="overlay navpage" id="komitentiOverlay">
   <div class="modal" style="max-width:980px;">
     <div class="modal-header">
       <h2>Komitenti</h2>
@@ -1192,7 +1202,7 @@
 </div>
 
 <!-- Godišnji odmori Modal -->
-<div class="overlay" id="goOverlay">
+<div class="overlay navpage" id="goOverlay">
   <div class="modal" style="max-width:980px;">
     <div class="modal-header">
       <h2>Godišnji odmori</h2>
@@ -1285,7 +1295,7 @@
 </div>
 
 <!-- Šihterica Modal -->
-<div class="overlay" id="sihtericaOverlay">
+<div class="overlay navpage" id="sihtericaOverlay">
   <div class="modal" style="max-width:1100px;">
     <div class="modal-header">
       <h2>Šihterica</h2>
@@ -1315,7 +1325,7 @@
 </div>
 
 <!-- Korisnici Modal -->
-<div class="overlay" id="usersOverlay">
+<div class="overlay navpage" id="usersOverlay">
   <div class="modal">
     <div class="modal-header">
       <h2>Korisnici</h2>
@@ -1357,7 +1367,7 @@
 </div>
 
 <!-- Šifarnici Modal -->
-<div class="overlay" id="radnaMjestaOverlay">
+<div class="overlay navpage" id="radnaMjestaOverlay">
   <div class="modal">
     <div class="modal-header">
       <h2>Radna mjesta</h2>
@@ -1374,7 +1384,7 @@
   </div>
 </div>
 
-<div class="overlay" id="odjeliOverlay">
+<div class="overlay navpage" id="odjeliOverlay">
   <div class="modal">
     <div class="modal-header">
       <h2>Odjeli</h2>
@@ -1389,7 +1399,7 @@
   </div>
 </div>
 
-<div class="overlay" id="tipUgovoraOverlay">
+<div class="overlay navpage" id="tipUgovoraOverlay">
   <div class="modal">
     <div class="modal-header">
       <h2>Tip ugovora</h2>
@@ -1404,7 +1414,7 @@
   </div>
 </div>
 
-<div class="overlay" id="strucnaSpremaOverlay">
+<div class="overlay navpage" id="strucnaSpremaOverlay">
   <div class="modal">
     <div class="modal-header">
       <h2>Stručna sprema</h2>
@@ -1420,7 +1430,7 @@
 </div>
 
 <!-- Godišnji odmor - podešavanja (Šifarnici) -->
-<div class="overlay" id="goPodesavanjaOverlay">
+<div class="overlay navpage" id="goPodesavanjaOverlay">
   <div class="modal" style="max-width:500px;">
     <div class="modal-header">
       <h2>Podešavanja godišnjeg odmora</h2>
@@ -1458,7 +1468,7 @@
   </div>
 </div>
 
-<div class="overlay" id="praznikOverlay">
+<div class="overlay navpage" id="praznikOverlay">
   <div class="modal">
     <div class="modal-header">
       <h2>Praznici</h2>
@@ -1513,7 +1523,7 @@
 </div>
 
 <!-- Evidencija izmjena Modal -->
-<div class="overlay" id="auditOverlay">
+<div class="overlay navpage" id="auditOverlay">
   <div class="modal" style="max-width:920px;">
     <div class="modal-header">
       <h2>Evidencija izmjena</h2>
@@ -1951,17 +1961,35 @@ function defaultPermissions(level) {
   return p;
 }
 
-// Dostupni moduli platforme
+// Dostupni moduli platforme (ekrani koje mijenja module-switcher)
 const MODULI = ['kadrovska', 'obracun', 'troskovi'];
 const MODULI_LABELS = { kadrovska: 'Kadrovska evidencija', obracun: 'Obračun plata', troskovi: 'Troškovi' };
 const MODULI_ICONS  = { kadrovska: '👥', obracun: '💰', troskovi: '📦' };
 function defaultModuli() { return ['kadrovska']; }
 
+// Stavke za dozvole (isto kao moduli, plus "Korisnici" - upravljanje nalozima, nema svoj ekran)
+const PERM_ITEMS = MODULI.concat(['korisnici']);
+const PERM_LABELS = Object.assign({}, MODULI_LABELS, { korisnici: 'Korisnici' });
+const PERM_ICONS  = Object.assign({}, MODULI_ICONS, { korisnici: '👤' });
+function defaultAdminModuli() { return PERM_ITEMS.slice(); }
+
+// Presjek dozvoljenih stavki za korisnika: šta korisnik ima I šta firma dozvoljava
+function dostupneStavkeZaKorisnika(u) {
+  if (!u) return [];
+  let dostupno = u.moduli || defaultModuli();
+  if (u.firma_id != null) {
+    const firma = firme.find(f => f.id === u.firma_id);
+    const firmaModuli = firma ? (firma.moduli || PERM_ITEMS.slice()) : PERM_ITEMS.slice();
+    dostupno = dostupno.filter(m => firmaModuli.includes(m));
+  }
+  return dostupno;
+}
+
 const USERS_SEED = [
-  { username: 'admin',   name: 'Administrator', password: '1234',           role: 'super_admin',   firma_id: null, poslovnica_id: null, permissions: defaultPermissions('puno'), moduli: MODULI.slice() },
+  { username: 'admin',   name: 'Administrator', password: '1234',           role: 'super_admin',   firma_id: null, poslovnica_id: null, permissions: defaultPermissions('puno'), moduli: defaultAdminModuli() },
   { username: 'korisnik',name: 'Korisnik',       password: 'appetito123',    role: 'korisnik',      firma_id: 1,    poslovnica_id: null, permissions: defaultPermissions('puno'), moduli: defaultModuli() },
   { username: 'minja',   name: 'Minja',          password: 'NDmDFsCf7pUAfB', role: 'korisnik',      firma_id: 1,    poslovnica_id: 2,    permissions: defaultPermissions('puno'), moduli: defaultModuli() },
-  { username: 'test',    name: 'Test korisnik',  password: '123',            role: 'korisnik',      firma_id: 2,    poslovnica_id: 3,    permissions: defaultPermissions('puno'), moduli: MODULI.slice() }
+  { username: 'test',    name: 'Test korisnik',  password: '123',            role: 'korisnik',      firma_id: 2,    poslovnica_id: 3,    permissions: defaultPermissions('puno'), moduli: defaultAdminModuli() }
 ];
 
 let codes = {};
@@ -2085,7 +2113,7 @@ async function loadData() {
     firme = (rows && rows.length) ? rows : null;
     if (!firme || !firme.length) { firme = JSON.parse(JSON.stringify(FIRME_SEED)); await saveFirme(); }
   } catch(e) { firme = JSON.parse(JSON.stringify(FIRME_SEED)); }
-  firme.forEach(f => { if (!f.moduli || !f.moduli.length) f.moduli = MODULI.slice(); });
+  firme.forEach(f => { if (!f.moduli || !f.moduli.length) f.moduli = PERM_ITEMS.slice(); });
 
   // Poslovnice
   try {
@@ -2169,6 +2197,7 @@ async function loadData() {
   } catch(e) { artikli = []; }
 
   render();
+  if (typeof updateModuleSwitcher === 'function') updateModuleSwitcher();
 }
 
 async function loadUsers() {
@@ -2209,7 +2238,7 @@ async function loadUsers() {
   users.forEach(u => {
     if (!u.permissions) u.permissions = defaultPermissions('puno');
     if (u.role === 'administrator' && u.firma_id == null && u.username === 'admin') u.role = 'super_admin';
-    if (!u.moduli) u.moduli = (u.role === 'administrator' || u.role === 'super_admin') ? MODULI.slice() : defaultModuli();
+    if (!u.moduli) u.moduli = (u.role === 'administrator' || u.role === 'super_admin') ? defaultAdminModuli() : defaultModuli();
   });
 }
 
@@ -2264,7 +2293,7 @@ async function saveFirme() {
   try {
     for (const f of firme) {
       await _supabase.from('firme').upsert({ id: f.id, naziv: f.naziv, naziv_pravni: f.naziv_pravni,
-        adresa: f.adresa, jib: f.jib, pib: f.pib || '', zastupnik: f.zastupnik, moduli: f.moduli || MODULI.slice() });
+        adresa: f.adresa, jib: f.jib, pib: f.pib || '', zastupnik: f.zastupnik, moduli: f.moduli || PERM_ITEMS.slice() });
     }
   } catch(e) { console.error(e); toast('Greška pri snimanju firmi.'); }
 }
@@ -3497,8 +3526,8 @@ $('reportsBtn').addEventListener('click', () => {
   renderReports();
   $('reportsOverlay').classList.add('open');
 });
-$('reportsCloseBtn').addEventListener('click', () => $('reportsOverlay').classList.remove('open'));
-$('reportsOverlay').addEventListener('click', (e) => { if (e.target.id === 'reportsOverlay') $('reportsOverlay').classList.remove('open'); });
+$('reportsCloseBtn').addEventListener('click', () => showAppSection('appWrap'));
+// (klik-izvan-za-zatvaranje uklonjen - reportsOverlay je sad puna stranica, ne popup)
 $('reportPoslovnica').addEventListener('change', renderReports);
 $('reportGroupBy').addEventListener('change', renderReports);
 
@@ -3756,8 +3785,8 @@ $('usersBtn').addEventListener('click', () => {
   renderUsersModal();
   $('usersOverlay').classList.add('open');
 });
-$('usersCloseBtn').addEventListener('click', () => $('usersOverlay').classList.remove('open'));
-$('usersOverlay').addEventListener('click', (e) => { if (e.target.id === 'usersOverlay') $('usersOverlay').classList.remove('open'); });
+$('usersCloseBtn').addEventListener('click', () => showAppSection('appWrap'));
+// (klik-izvan-za-zatvaranje uklonjen - usersOverlay je sad puna stranica, ne popup)
 
 $('addUserBtn').addEventListener('click', async () => {
   const username = $('newUserUsername').value.trim();
@@ -4176,40 +4205,40 @@ $('radnaMjestaBtn').addEventListener('click', () => {
   updateRoleUI();
   $('radnaMjestaOverlay').classList.add('open');
 });
-$('radnaMjestaCloseBtn').addEventListener('click', () => $('radnaMjestaOverlay').classList.remove('open'));
-$('radnaMjestaOverlay').addEventListener('click', (e) => { if (e.target.id === 'radnaMjestaOverlay') $('radnaMjestaOverlay').classList.remove('open'); });
+$('radnaMjestaCloseBtn').addEventListener('click', () => showAppSection('appWrap'));
+// (klik-izvan-za-zatvaranje uklonjen - radnaMjestaOverlay je sad puna stranica, ne popup)
 
 $('odjeliBtn').addEventListener('click', () => {
   renderSingleCodeList('Odjel', 'odjeliBody');
   updateRoleUI();
   $('odjeliOverlay').classList.add('open');
 });
-$('odjeliCloseBtn').addEventListener('click', () => $('odjeliOverlay').classList.remove('open'));
-$('odjeliOverlay').addEventListener('click', (e) => { if (e.target.id === 'odjeliOverlay') $('odjeliOverlay').classList.remove('open'); });
+$('odjeliCloseBtn').addEventListener('click', () => showAppSection('appWrap'));
+// (klik-izvan-za-zatvaranje uklonjen - odjeliOverlay je sad puna stranica, ne popup)
 
 $('tipUgovoraBtn').addEventListener('click', () => {
   renderSingleCodeList('Tip_ugovora', 'tipUgovoraBody');
   updateRoleUI();
   $('tipUgovoraOverlay').classList.add('open');
 });
-$('tipUgovoraCloseBtn').addEventListener('click', () => $('tipUgovoraOverlay').classList.remove('open'));
-$('tipUgovoraOverlay').addEventListener('click', (e) => { if (e.target.id === 'tipUgovoraOverlay') $('tipUgovoraOverlay').classList.remove('open'); });
+$('tipUgovoraCloseBtn').addEventListener('click', () => showAppSection('appWrap'));
+// (klik-izvan-za-zatvaranje uklonjen - tipUgovoraOverlay je sad puna stranica, ne popup)
 
 $('strucnaSpremaBtn').addEventListener('click', () => {
   renderSingleCodeList('Strucna_sprema', 'strucnaSpremaBody');
   updateRoleUI();
   $('strucnaSpremaOverlay').classList.add('open');
 });
-$('strucnaSpremaCloseBtn').addEventListener('click', () => $('strucnaSpremaOverlay').classList.remove('open'));
-$('strucnaSpremaOverlay').addEventListener('click', (e) => { if (e.target.id === 'strucnaSpremaOverlay') $('strucnaSpremaOverlay').classList.remove('open'); });
+$('strucnaSpremaCloseBtn').addEventListener('click', () => showAppSection('appWrap'));
+// (klik-izvan-za-zatvaranje uklonjen - strucnaSpremaOverlay je sad puna stranica, ne popup)
 
 $('praznikBtnNav').addEventListener('click', () => {
   renderPraznieci();
   updateRoleUI();
   $('praznikOverlay').classList.add('open');
 });
-$('praznikCloseBtn').addEventListener('click', () => $('praznikOverlay').classList.remove('open'));
-$('praznikOverlay').addEventListener('click', (e) => { if (e.target.id === 'praznikOverlay') $('praznikOverlay').classList.remove('open'); });
+$('praznikCloseBtn').addEventListener('click', () => showAppSection('appWrap'));
+// (klik-izvan-za-zatvaranje uklonjen - praznikOverlay je sad puna stranica, ne popup)
 
 // ---------- Radni raspored (po radnom mjestu) ----------
 function getOrCreateRaspored(radnoMjesto) {
@@ -4513,14 +4542,14 @@ function renderFirmeModal() {
     modWrap.appendChild(modLabel);
     const modRow = document.createElement('div');
     modRow.style.cssText = 'display:flex; gap:16px; flex-wrap:wrap;';
-    MODULI.forEach(m => {
+    PERM_ITEMS.forEach(m => {
       const lbl = document.createElement('label');
       lbl.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;font-weight:600;';
       const cb = document.createElement('input');
       cb.type = 'checkbox';
-      cb.checked = (f.moduli || MODULI.slice()).includes(m);
+      cb.checked = (f.moduli || PERM_ITEMS.slice()).includes(m);
       cb.addEventListener('change', async () => {
-        if (!f.moduli) f.moduli = MODULI.slice();
+        if (!f.moduli) f.moduli = PERM_ITEMS.slice();
         if (cb.checked) { if (!f.moduli.includes(m)) f.moduli.push(m); }
         else {
           f.moduli = f.moduli.filter(x => x !== m);
@@ -4529,9 +4558,11 @@ function renderFirmeModal() {
         await saveFirme();
         await logAction('Firme', '', `Izmijenjeni moduli za firmu "${f.naziv}"`);
         toast(`Moduli ažurirani za "${f.naziv}".`);
+        updateSidebar();
+        updateModuleSwitcher();
       });
       lbl.appendChild(cb);
-      lbl.appendChild(document.createTextNode(`${MODULI_ICONS[m]} ${MODULI_LABELS[m]}`));
+      lbl.appendChild(document.createTextNode(`${PERM_ICONS[m]} ${PERM_LABELS[m]}`));
       modRow.appendChild(lbl);
     });
     modWrap.appendChild(modRow);
@@ -4616,14 +4647,14 @@ $('firmeBtn').addEventListener('click', () => {
   renderNewFirmaModuliCheckboxes();
   $('firmeOverlay').classList.add('open');
 });
-$('firmeCloseBtn').addEventListener('click', () => $('firmeOverlay').classList.remove('open'));
-$('firmeOverlay').addEventListener('click', (e) => { if (e.target.id === 'firmeOverlay') $('firmeOverlay').classList.remove('open'); });
+$('firmeCloseBtn').addEventListener('click', () => showAppSection('appWrap'));
+// (klik-izvan-za-zatvaranje uklonjen - firmeOverlay je sad puna stranica, ne popup)
 
 function renderNewFirmaModuliCheckboxes() {
   const row = $('newFirmaModuliRow');
   if (!row) return;
   row.innerHTML = '';
-  MODULI.forEach(m => {
+  PERM_ITEMS.forEach(m => {
     const lbl = document.createElement('label');
     lbl.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;font-weight:600;';
     const cb = document.createElement('input');
@@ -4631,7 +4662,7 @@ function renderNewFirmaModuliCheckboxes() {
     cb.checked = true;
     cb.dataset.modul = m;
     lbl.appendChild(cb);
-    lbl.appendChild(document.createTextNode(`${MODULI_ICONS[m]} ${MODULI_LABELS[m]}`));
+    lbl.appendChild(document.createTextNode(`${PERM_ICONS[m]} ${PERM_LABELS[m]}`));
     row.appendChild(lbl);
   });
 }
@@ -4762,8 +4793,8 @@ $('komitentiBtn').addEventListener('click', () => {
   renderKomitentiModal();
   $('komitentiOverlay').classList.add('open');
 });
-$('komitentiCloseBtn').addEventListener('click', () => $('komitentiOverlay').classList.remove('open'));
-$('komitentiOverlay').addEventListener('click', (e) => { if (e.target.id === 'komitentiOverlay') $('komitentiOverlay').classList.remove('open'); });
+$('komitentiCloseBtn').addEventListener('click', () => showAppSection('appWrap'));
+// (klik-izvan-za-zatvaranje uklonjen - komitentiOverlay je sad puna stranica, ne popup)
 $('komitentFirmaFilter').addEventListener('change', renderKomitentiModal);
 $('cancelKomitentEditBtn').addEventListener('click', resetKomitentForm);
 
@@ -4997,8 +5028,8 @@ $('godisnjiOdmoriBtn').addEventListener('click', () => {
   renderGoModal();
   $('goOverlay').classList.add('open');
 });
-$('goCloseBtn').addEventListener('click', () => $('goOverlay').classList.remove('open'));
-$('goOverlay').addEventListener('click', (e) => { if (e.target.id === 'goOverlay') $('goOverlay').classList.remove('open'); });
+$('goCloseBtn').addEventListener('click', () => showAppSection('appWrap'));
+// (klik-izvan-za-zatvaranje uklonjen - goOverlay je sad puna stranica, ne popup)
 
 $('goEmployeeSelect').addEventListener('change', () => {
   const v = $('goEmployeeSelect').value;
@@ -5380,10 +5411,8 @@ $('goPodesavanjaBtn').addEventListener('click', () => {
   renderGoSettingsTexts();
   $('goPodesavanjaOverlay').classList.add('open');
 });
-$('goPodesavanjaCloseBtn').addEventListener('click', () => $('goPodesavanjaOverlay').classList.remove('open'));
-$('goPodesavanjaOverlay').addEventListener('click', (e) => {
-  if (e.target.id === 'goPodesavanjaOverlay') $('goPodesavanjaOverlay').classList.remove('open');
-});
+$('goPodesavanjaCloseBtn').addEventListener('click', () => showAppSection('appWrap'));
+// (klik-izvan-za-zatvaranje uklonjen - goPodesavanjaOverlay je sad puna stranica, ne popup)
 $('goPodesavanjaResetBtn').addEventListener('click', async () => {
   if (!confirm('Vratiti podešavanja na default (20 dana, +1 na svakih 5 godina)?')) return;
   goSettings = JSON.parse(JSON.stringify(GO_SETTINGS_DEFAULT));
@@ -5403,7 +5432,6 @@ $('saveGoSettingsBtn').addEventListener('click', async () => {
   await logAction('Podešavanja', '', `Izmijenjena pravila obračuna GO: osnova ${osnovniDani}, +${dodatniDaniNaGodine} na ${godinaPrag}g`);
   renderGoSettingsTexts();
   renderGoSummary();
-  $('goPodesavanjaOverlay').classList.remove('open');
   toast('Podešavanja sačuvana.');
 });
 
@@ -5719,8 +5747,8 @@ $('sihtericaBtn').addEventListener('click', () => {
   renderSihtericaTable();
   $('sihtericaOverlay').classList.add('open');
 });
-$('sihtericaCloseBtn').addEventListener('click', () => $('sihtericaOverlay').classList.remove('open'));
-$('sihtericaOverlay').addEventListener('click', (e) => { if (e.target.id === 'sihtericaOverlay') $('sihtericaOverlay').classList.remove('open'); });
+$('sihtericaCloseBtn').addEventListener('click', () => showAppSection('appWrap'));
+// (klik-izvan-za-zatvaranje uklonjen - sihtericaOverlay je sad puna stranica, ne popup)
 
 $('sihPoslovnicaFilter').addEventListener('change', () => { populateSihEmployeeSelect(); renderSihtericaTable(); });
 $('sihRadnoMjestoFilter').addEventListener('change', () => { populateSihEmployeeSelect(); renderSihtericaTable(); });
@@ -5944,8 +5972,8 @@ $('expiryBtn').addEventListener('click', () => {
   renderExpiryModal();
   $('expiryOverlay').classList.add('open');
 });
-$('expiryCloseBtn').addEventListener('click', () => $('expiryOverlay').classList.remove('open'));
-$('expiryOverlay').addEventListener('click', (e) => { if (e.target.id === 'expiryOverlay') $('expiryOverlay').classList.remove('open'); });
+$('expiryCloseBtn').addEventListener('click', () => showAppSection('appWrap'));
+// (klik-izvan-za-zatvaranje uklonjen - expiryOverlay je sad puna stranica, ne popup)
 
 $('expirySelectAllBtn').addEventListener('click', () => {
   const allowed = accessiblePoslovnicaNazivi();
@@ -6002,8 +6030,8 @@ $('auditBtn').addEventListener('click', () => {
   updateRoleUI();
   $('auditOverlay').classList.add('open');
 });
-$('auditCloseBtn').addEventListener('click', () => $('auditOverlay').classList.remove('open'));
-$('auditOverlay').addEventListener('click', (e) => { if (e.target.id === 'auditOverlay') $('auditOverlay').classList.remove('open'); });
+$('auditCloseBtn').addEventListener('click', () => showAppSection('appWrap'));
+// (klik-izvan-za-zatvaranje uklonjen - auditOverlay je sad puna stranica, ne popup)
 $('auditClearBtn').addEventListener('click', async () => {
   if (!isAdmin) return;
   if (!confirm('Obrisati cijelu evidenciju izmjena?')) return;
@@ -6082,23 +6110,43 @@ function toggleSidebarGroup(titleEl) {
   }
 }
 
+// Sve navigacijske "stranice" koje se prikazuju preko cijelog ekrana (kao Zaposleni)
+const NAV_PAGE_OVERLAYS = ['radnaMjestaOverlay','odjeliOverlay','tipUgovoraOverlay','strucnaSpremaOverlay',
+  'praznikOverlay','firmeOverlay','komitentiOverlay','reportsOverlay','expiryOverlay','goOverlay',
+  'sihtericaOverlay','usersOverlay','auditOverlay','goPodesavanjaOverlay'];
+
+// Prikaži jednu sekciju preko cijelog ekrana, sakrij sve ostale (Zaposleni, module, ostale stranice)
+function showAppSection(sectionId) {
+  $('appWrap').style.display = 'none';
+  const modObracun = document.getElementById('modul_obracun'); if (modObracun) modObracun.style.display = 'none';
+  const modTroskovi = document.getElementById('modul_troskovi'); if (modTroskovi) modTroskovi.style.display = 'none';
+  NAV_PAGE_OVERLAYS.forEach(id => { const el = document.getElementById(id); if (el) el.classList.remove('open'); });
+  if (sectionId === 'appWrap') {
+    $('appWrap').style.display = 'block';
+  } else {
+    const el = document.getElementById(sectionId);
+    if (el) el.classList.add('open');
+  }
+  window.scrollTo(0, 0);
+}
+
 // Mapa: sidebar ID -> akcija (direktno, bez klikanja skrivenih dugmadi)
 const SIDEBAR_ACTIONS = {
-  sb_zaposleni:      () => { closeAllNavPanels(); $('navZaposleniBtn').classList.add('active'); },
-  sb_radnaMjesta:    () => { renderSingleCodeList('Radno_mjesto', 'radnoMjestoListBody'); renderRaspored(); updateRoleUI(); $('radnaMjestaOverlay').classList.add('open'); },
-  sb_odjeli:         () => { renderSingleCodeList('Odjel', 'odjeliBody'); updateRoleUI(); $('odjeliOverlay').classList.add('open'); },
-  sb_tipUgovora:     () => { renderSingleCodeList('Tip_ugovora', 'tipUgovoraBody'); updateRoleUI(); $('tipUgovoraOverlay').classList.add('open'); },
-  sb_strucnaSprema:  () => { renderSingleCodeList('Strucna_sprema', 'strucnaSpremaBody'); updateRoleUI(); $('strucnaSpremaOverlay').classList.add('open'); },
-  sb_praznici:       () => { renderPraznieci(); updateRoleUI(); $('praznikOverlay').classList.add('open'); },
-  sb_firme:          () => { renderFirmeModal(); $('firmeOverlay').classList.add('open'); },
-  sb_komitenti:      () => { resetKomitentForm(); renderKomitentiModal(); $('komitentiOverlay').classList.add('open'); },
-  sb_reports:        () => { renderReports(); $('reportsOverlay').classList.add('open'); },
-  sb_expiry:         () => { expirySelection = new Set(); renderExpiryModal(); $('expiryOverlay').classList.add('open'); },
-  sb_go:             () => { renderGoModal(); $('goOverlay').classList.add('open'); },
-  sb_sihterica:      () => { populateSihFilters(); populateSihEmployeeSelect(); renderSihtericaTable(); $('sihtericaOverlay').classList.add('open'); },
-  sb_users:          () => { renderUsersModal(); $('usersOverlay').classList.add('open'); },
-  sb_audit:          () => { renderAuditLog(); updateRoleUI(); $('auditOverlay').classList.add('open'); },
-  sb_goPodesavanja:  () => { renderGoSettingsTexts(); $('goPodesavanjaOverlay').classList.add('open'); },
+  sb_zaposleni:      () => { showAppSection('appWrap'); },
+  sb_radnaMjesta:    () => { renderSingleCodeList('Radno_mjesto', 'radnoMjestoListBody'); renderRaspored(); updateRoleUI(); showAppSection('radnaMjestaOverlay'); },
+  sb_odjeli:         () => { renderSingleCodeList('Odjel', 'odjeliBody'); updateRoleUI(); showAppSection('odjeliOverlay'); },
+  sb_tipUgovora:     () => { renderSingleCodeList('Tip_ugovora', 'tipUgovoraBody'); updateRoleUI(); showAppSection('tipUgovoraOverlay'); },
+  sb_strucnaSprema:  () => { renderSingleCodeList('Strucna_sprema', 'strucnaSpremaBody'); updateRoleUI(); showAppSection('strucnaSpremaOverlay'); },
+  sb_praznici:       () => { renderPraznieci(); updateRoleUI(); showAppSection('praznikOverlay'); },
+  sb_firme:          () => { renderFirmeModal(); renderNewFirmaModuliCheckboxes(); showAppSection('firmeOverlay'); },
+  sb_komitenti:      () => { resetKomitentForm(); renderKomitentiModal(); showAppSection('komitentiOverlay'); },
+  sb_reports:        () => { renderReports(); showAppSection('reportsOverlay'); },
+  sb_expiry:         () => { expirySelection = new Set(); renderExpiryModal(); showAppSection('expiryOverlay'); },
+  sb_go:             () => { renderGoModal(); showAppSection('goOverlay'); },
+  sb_sihterica:      () => { populateSihFilters(); populateSihEmployeeSelect(); renderSihtericaTable(); showAppSection('sihtericaOverlay'); },
+  sb_users:          () => { renderUsersModal(); showAppSection('usersOverlay'); },
+  sb_audit:          () => { renderAuditLog(); updateRoleUI(); showAppSection('auditOverlay'); },
+  sb_goPodesavanja:  () => { renderGoSettingsTexts(); showAppSection('goPodesavanjaOverlay'); },
 };
 
 function sidebarClick(sbId, targetBtnId) {
@@ -6139,7 +6187,7 @@ function updateSidebar() {
 
   // Prava pristupa - sakrivanje stavki
   document.getElementById('sb_firme').style.display = (isGlavniAdmin() && canView('firme')) ? '' : 'none';
-  document.getElementById('sb_users').style.display = isAdmin ? '' : 'none';
+  // sb_users vidljivost se sad računa u updateModuleSwitcher() (uloga + dozvola modula/firme)
   document.getElementById('sb_zaposleni').style.display = canView('zaposleni') ? '' : 'none';
   document.getElementById('sb_go').style.display = canView('godisnji_odmori') ? '' : 'none';
   document.getElementById('sb_sihterica').style.display = canView('godisnji_odmori') ? '' : 'none';
@@ -6323,6 +6371,8 @@ function switchModule(modul) {
     const el = document.getElementById('modul_' + m);
     if (el) el.style.display = 'none';
   });
+  // Sakrij sve navigacijske "stranice" (Firme, Korisnici, Izvještaji, itd.)
+  NAV_PAGE_OVERLAYS.forEach(id => { const el = document.getElementById(id); if (el) el.classList.remove('open'); });
   // Prikaži odabrani
   if (modul === 'kadrovska') {
     $('appWrap').style.display = '';
@@ -6447,7 +6497,7 @@ function renderModuleCheckboxes() {
     modSection.appendChild(title);
     const cbRow = document.createElement('div');
     cbRow.style.cssText = 'display:flex;gap:16px;flex-wrap:wrap;';
-    MODULI.forEach(m => {
+    PERM_ITEMS.forEach(m => {
       const lbl = document.createElement('label');
       lbl.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;font-weight:600;';
       const cb = document.createElement('input');
@@ -6461,11 +6511,12 @@ function renderModuleCheckboxes() {
         if (currentSessionUser && currentSessionUser.username === u.username) {
           currentSessionUser.moduli = u.moduli;
           updateSidebar();
+          updateModuleSwitcher();
         }
         toast(`Moduli ažurirani za "${u.username}".`);
       });
       lbl.appendChild(cb);
-      lbl.appendChild(document.createTextNode(`${MODULI_ICONS[m]} ${MODULI_LABELS[m]}`));
+      lbl.appendChild(document.createTextNode(`${PERM_ICONS[m]} ${PERM_LABELS[m]}`));
       cbRow.appendChild(lbl);
     });
     modSection.appendChild(cbRow);
@@ -6476,23 +6527,23 @@ function renderModuleCheckboxes() {
 // ── updateModuleSwitcher - prikaži module buttone (poziva se iz updateSidebar) ──
 function updateModuleSwitcher() {
   const u = currentSessionUser;
-  let dostupniModuli = u ? (u.moduli || defaultModuli()) : [];
-  if (u && u.firma_id != null) {
-    const firma = firme.find(f => f.id === u.firma_id);
-    const firmaModuli = firma ? (firma.moduli || MODULI.slice()) : MODULI.slice();
-    dostupniModuli = dostupniModuli.filter(m => firmaModuli.includes(m));
-    if (!dostupniModuli.length) dostupniModuli = ['kadrovska'];
-  }
+  const dostupneStavke = dostupneStavkeZaKorisnika(u);
+  // Ekranski moduli (Kadrovska/Obračun/Troškovi) - samo ovi idu u switcher
+  let screenModuli = dostupneStavke.filter(m => MODULI.includes(m));
+  if (!screenModuli.length) screenModuli = ['kadrovska'];
   MODULI.forEach(m => {
     const btn = document.getElementById('modBtn_' + m);
-    if (btn) btn.style.display = dostupniModuli.includes(m) ? '' : 'none';
+    if (btn) btn.style.display = screenModuli.includes(m) ? '' : 'none';
   });
   const ms = document.getElementById('moduleSwitcher');
-  if (ms) ms.style.display = dostupniModuli.length > 1 ? '' : 'none';
+  if (ms) ms.style.display = screenModuli.length > 1 ? '' : 'none';
   // Ako je trenutno aktivan modul postao nedostupan, prebaci na prvi dostupan
-  if (typeof aktivniModul !== 'undefined' && !dostupniModuli.includes(aktivniModul)) {
-    switchModule(dostupniModuli[0] || 'kadrovska');
+  if (typeof aktivniModul !== 'undefined' && !screenModuli.includes(aktivniModul)) {
+    switchModule(screenModuli[0] || 'kadrovska');
   }
+  // "Korisnici" - nema svoj ekran, samo pokazuje/sakriva sidebar stavku (uz provjeru role)
+  const sbUsers = document.getElementById('sb_users');
+  if (sbUsers) sbUsers.style.display = (isAdmin && dostupneStavke.includes('korisnici')) ? '' : 'none';
 }
 
 updateRoleUI();
