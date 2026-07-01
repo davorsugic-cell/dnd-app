@@ -1137,6 +1137,10 @@
         <div class="field"><label>PIB</label><input type="text" id="newFirmaPib"></div>
         <div class="field"><label>Zastupnik</label><input type="text" id="newFirmaZastupnik"></div>
       </div>
+      <div style="margin-top:12px;">
+        <label style="font-size:12px; color:var(--muted); display:block; margin-bottom:6px;">Dozvoljeni moduli</label>
+        <div id="newFirmaModuliRow" style="display:flex; gap:16px; flex-wrap:wrap;"></div>
+      </div>
       <div class="modal-actions" style="justify-content:flex-start; margin-top:10px;">
         <button type="button" class="primary small" id="addFirmaBtn">+ Dodaj firmu</button>
       </div>
@@ -2081,6 +2085,7 @@ async function loadData() {
     firme = (rows && rows.length) ? rows : null;
     if (!firme || !firme.length) { firme = JSON.parse(JSON.stringify(FIRME_SEED)); await saveFirme(); }
   } catch(e) { firme = JSON.parse(JSON.stringify(FIRME_SEED)); }
+  firme.forEach(f => { if (!f.moduli || !f.moduli.length) f.moduli = MODULI.slice(); });
 
   // Poslovnice
   try {
@@ -2259,7 +2264,7 @@ async function saveFirme() {
   try {
     for (const f of firme) {
       await _supabase.from('firme').upsert({ id: f.id, naziv: f.naziv, naziv_pravni: f.naziv_pravni,
-        adresa: f.adresa, jib: f.jib, pib: f.pib || '', zastupnik: f.zastupnik });
+        adresa: f.adresa, jib: f.jib, pib: f.pib || '', zastupnik: f.zastupnik, moduli: f.moduli || MODULI.slice() });
     }
   } catch(e) { console.error(e); toast('Greška pri snimanju firmi.'); }
 }
@@ -4499,6 +4504,39 @@ function renderFirmeModal() {
     saveRow.appendChild(saveBtn);
     section.appendChild(saveRow);
 
+    // Moduli dozvoljeni ovoj firmi
+    const modWrap = document.createElement('div');
+    modWrap.style.cssText = 'margin-top:10px;';
+    const modLabel = document.createElement('div');
+    modLabel.style.cssText = 'font-size:12px; color:var(--muted); margin-bottom:6px;';
+    modLabel.textContent = 'Dozvoljeni moduli';
+    modWrap.appendChild(modLabel);
+    const modRow = document.createElement('div');
+    modRow.style.cssText = 'display:flex; gap:16px; flex-wrap:wrap;';
+    MODULI.forEach(m => {
+      const lbl = document.createElement('label');
+      lbl.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;font-weight:600;';
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = (f.moduli || MODULI.slice()).includes(m);
+      cb.addEventListener('change', async () => {
+        if (!f.moduli) f.moduli = MODULI.slice();
+        if (cb.checked) { if (!f.moduli.includes(m)) f.moduli.push(m); }
+        else {
+          f.moduli = f.moduli.filter(x => x !== m);
+          if (!f.moduli.length) { f.moduli = ['kadrovska']; cb.checked = true; renderFirmeModal(); }
+        }
+        await saveFirme();
+        await logAction('Firme', '', `Izmijenjeni moduli za firmu "${f.naziv}"`);
+        toast(`Moduli ažurirani za "${f.naziv}".`);
+      });
+      lbl.appendChild(cb);
+      lbl.appendChild(document.createTextNode(`${MODULI_ICONS[m]} ${MODULI_LABELS[m]}`));
+      modRow.appendChild(lbl);
+    });
+    modWrap.appendChild(modRow);
+    section.appendChild(modWrap);
+
     // Poslovnice for this firma
     const posDiv = document.createElement('div');
     posDiv.style.borderTop = '0.5px solid var(--line)';
@@ -4575,14 +4613,34 @@ function renderFirmeModal() {
 
 $('firmeBtn').addEventListener('click', () => {
   renderFirmeModal();
+  renderNewFirmaModuliCheckboxes();
   $('firmeOverlay').classList.add('open');
 });
 $('firmeCloseBtn').addEventListener('click', () => $('firmeOverlay').classList.remove('open'));
 $('firmeOverlay').addEventListener('click', (e) => { if (e.target.id === 'firmeOverlay') $('firmeOverlay').classList.remove('open'); });
 
+function renderNewFirmaModuliCheckboxes() {
+  const row = $('newFirmaModuliRow');
+  if (!row) return;
+  row.innerHTML = '';
+  MODULI.forEach(m => {
+    const lbl = document.createElement('label');
+    lbl.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;font-weight:600;';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = true;
+    cb.dataset.modul = m;
+    lbl.appendChild(cb);
+    lbl.appendChild(document.createTextNode(`${MODULI_ICONS[m]} ${MODULI_LABELS[m]}`));
+    row.appendChild(lbl);
+  });
+}
+
 $('addFirmaBtn').addEventListener('click', async () => {
   const naziv = $('newFirmaNaziv').value.trim();
   if (!naziv) { toast('Naziv firme je obavezan.'); return; }
+  const odabraniModuli = Array.from($('newFirmaModuliRow').querySelectorAll('input[type=checkbox]'))
+    .filter(cb => cb.checked).map(cb => cb.dataset.modul);
   const f = {
     id: nextId(firme),
     naziv,
@@ -4591,12 +4649,14 @@ $('addFirmaBtn').addEventListener('click', async () => {
     jib: $('newFirmaJib').value.trim(),
     pib: $('newFirmaPib').value.trim(),
     zastupnik: $('newFirmaZastupnik').value.trim(),
+    moduli: odabraniModuli.length ? odabraniModuli : ['kadrovska'],
   };
   firme.push(f);
   await saveFirme();
   await logAction('Firme', '', `Dodana firma "${naziv}"`);
   ['newFirmaNaziv','newFirmaNazivPravni','newFirmaAdresa','newFirmaJib','newFirmaPib','newFirmaZastupnik']
     .forEach(id => { $(id).value = ''; });
+  renderNewFirmaModuliCheckboxes();
   renderFirmeModal();
   toast('Firma dodana.');
 });
@@ -6416,13 +6476,23 @@ function renderModuleCheckboxes() {
 // ── updateModuleSwitcher - prikaži module buttone (poziva se iz updateSidebar) ──
 function updateModuleSwitcher() {
   const u = currentSessionUser;
-  const dostupniModuli = u ? (u.moduli || defaultModuli()) : [];
+  let dostupniModuli = u ? (u.moduli || defaultModuli()) : [];
+  if (u && u.firma_id != null) {
+    const firma = firme.find(f => f.id === u.firma_id);
+    const firmaModuli = firma ? (firma.moduli || MODULI.slice()) : MODULI.slice();
+    dostupniModuli = dostupniModuli.filter(m => firmaModuli.includes(m));
+    if (!dostupniModuli.length) dostupniModuli = ['kadrovska'];
+  }
   MODULI.forEach(m => {
     const btn = document.getElementById('modBtn_' + m);
     if (btn) btn.style.display = dostupniModuli.includes(m) ? '' : 'none';
   });
   const ms = document.getElementById('moduleSwitcher');
   if (ms) ms.style.display = dostupniModuli.length > 1 ? '' : 'none';
+  // Ako je trenutno aktivan modul postao nedostupan, prebaci na prvi dostupan
+  if (typeof aktivniModul !== 'undefined' && !dostupniModuli.includes(aktivniModul)) {
+    switchModule(dostupniModuli[0] || 'kadrovska');
+  }
 }
 
 updateRoleUI();
