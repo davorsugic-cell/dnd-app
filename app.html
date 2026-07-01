@@ -960,29 +960,29 @@
       <div class="section">
         <h3>Osnovni podaci</h3>
         <div class="grid">
-          <div class="field"><label>Ime</label><input type="text" id="f_Ime" required></div>
-          <div class="field"><label>Prezime</label><input type="text" id="f_Prezime" required></div>
+          <div class="field"><label>Ime <span style="color:red">*</span></label><input type="text" id="f_Ime" required></div>
+          <div class="field"><label>Prezime <span style="color:red">*</span></label><input type="text" id="f_Prezime" required></div>
           <div class="field"><label>Ime roditelja <span class="opt">(opciono)</span></label><input type="text" id="f_Ime_roditelja"></div>
           <div class="field"><label>Datum rođenja</label><input type="text" id="f_Datum_rodjenja" placeholder="dd.mm.gggg"></div>
-          <div class="field"><label>JMBG</label><input type="text" id="f_JMBG" maxlength="13" placeholder="13 cifara"></div>
+          <div class="field"><label>JMBG <span style="color:red">*</span></label><input type="text" id="f_JMBG" maxlength="13" placeholder="13 cifara"></div>
         </div>
       </div>
       <div class="section">
         <h3>Adresa</h3>
         <div class="grid">
-          <div class="field full"><label>Adresa (ulica i broj)</label><input type="text" id="f_Adresa"></div>
-          <div class="field"><label>Mjesto stanovanja</label><input type="text" id="f_Mjesto_stanovanja" value="Banja Luka"></div>
+          <div class="field full"><label>Adresa (ulica i broj) <span style="color:red">*</span></label><input type="text" id="f_Adresa"></div>
+          <div class="field"><label>Mjesto stanovanja <span style="color:red">*</span></label><input type="text" id="f_Mjesto_stanovanja" value="Banja Luka"></div>
         </div>
       </div>
       <div class="section">
         <h3>Stručna sprema</h3>
         <div class="grid">
           <div class="field">
-            <label>Stručna sprema</label>
+            <label>Stručna sprema <span style="color:red">*</span></label>
             <select id="f_Strucna_sprema"></select>
           </div>
-          <div class="field"><label>Završena škola <span class="opt">(opciono)</span></label><input type="text" id="f_Zavrsena_skola"></div>
-          <div class="field full"><label>Stručni/naučni naziv <span class="opt">(npr. "Ugostiteljsko-kulinarski tehničar")</span></label><input type="text" id="f_Strucni_naziv"></div>
+          <div class="field"><label>Završena škola <span class="opt">(obavezno za ugovor o radu)</span></label><input type="text" id="f_Zavrsena_skola"></div>
+          <div class="field full"><label>Stručni/naučni naziv <span class="opt">(obavezno za ugovor o radu, npr. "Ugostiteljsko-kulinarski tehničar")</span></label><input type="text" id="f_Strucni_naziv"></div>
         </div>
       </div>
       <div class="section">
@@ -997,19 +997,19 @@
             <select id="f_Poslovnica"></select>
           </div>
           <div class="field">
-            <label>Odjel</label>
+            <label>Odjel <span style="color:red">*</span></label>
             <select id="f_Odjel"></select>
           </div>
-          <div class="field full"><label>Radno mjesto</label><select id="f_Radno_mjesto"></select></div>
+          <div class="field full"><label>Radno mjesto <span style="color:red">*</span></label><select id="f_Radno_mjesto"></select></div>
           <div class="field">
-            <label>Tip ugovora</label>
+            <label>Tip ugovora <span style="color:red">*</span></label>
             <select id="f_Tip_ugovora"></select>
           </div>
-          <div class="field"><label>Radno vrijeme (h/sedmično)</label><input type="text" id="f_Radno_vrijeme" value="40"></div>
-          <div class="field"><label>Datum stupanja na rad</label><input type="text" id="f_Datum_stupanja_na_rad" placeholder="dd.mm.gggg"></div>
-          <div class="field"><label>Datum prestanka ugovora <span class="opt">(za određeno/probni)</span></label><input type="text" id="f_Datum_prestanka_ugovora" placeholder="dd.mm.gggg"></div>
-          <div class="field"><label>Neto plata (KM)</label><input type="text" id="f_Neto_plata" placeholder="npr. 950"></div>
-          <div class="field"><label>Bruto plata (KM)</label><input type="text" id="f_Bruto_plata" placeholder="npr. 1508,20"></div>
+          <div class="field"><label>Radno vrijeme (h/sedmično) <span style="color:red">*</span></label><input type="text" id="f_Radno_vrijeme" value="40"></div>
+          <div class="field"><label>Datum stupanja na rad <span style="color:red">*</span></label><input type="text" id="f_Datum_stupanja_na_rad" placeholder="dd.mm.gggg"></div>
+          <div class="field"><label>Datum prestanka ugovora <span class="opt">(obavezno za određeno/probni)</span></label><input type="text" id="f_Datum_prestanka_ugovora" placeholder="dd.mm.gggg"></div>
+          <div class="field"><label>Neto plata (KM) <span class="opt">(obavezno za dopunski rad)</span></label><input type="text" id="f_Neto_plata" placeholder="npr. 950"></div>
+          <div class="field"><label>Bruto plata (KM) <span class="opt">(obavezno za ugovor o radu)</span></label><input type="text" id="f_Bruto_plata" placeholder="npr. 1508,20"></div>
         </div>
       </div>
       <div class="section">
@@ -1024,8 +1024,8 @@
       <div class="section">
         <h3>Podaci za sačinjavanje dokumenta</h3>
         <div class="grid">
-          <div class="field"><label>Mjesto zaključenja ugovora</label><input type="text" id="f_Mjesto_zakljucenja" value="Banja Luka"></div>
-          <div class="field"><label>Datum zaključenja ugovora</label><input type="text" id="f_Datum_zakljucenja" placeholder="dd.mm.gggg"></div>
+          <div class="field"><label>Mjesto zaključenja ugovora <span style="color:red">*</span></label><input type="text" id="f_Mjesto_zakljucenja" value="Banja Luka"></div>
+          <div class="field"><label>Datum zaključenja ugovora <span style="color:red">*</span></label><input type="text" id="f_Datum_zakljucenja" placeholder="dd.mm.gggg"></div>
         </div>
       </div>
       <input type="hidden" id="f_GO_broj_dana">
@@ -2484,7 +2484,7 @@ function diffEmployee(oldEmp, newEmp) {
   return changes;
 }
 
-function populateSelect(selectEl, list, currentValue, allowEmpty) {
+function populateSelect(selectEl, list, currentValue, allowEmpty, useNazivAsValue) {
   selectEl.innerHTML = '';
   if (allowEmpty) {
     const opt = document.createElement('option');
@@ -2493,13 +2493,15 @@ function populateSelect(selectEl, list, currentValue, allowEmpty) {
   }
   // Podržava i stari format (string[]) i novi ({id,naziv}[])
   const items = list.map(v => typeof v === 'string' ? {id: v, naziv: v} : v);
+  const matchKey = useNazivAsValue ? 'naziv' : 'id';
   // Ako currentValue nije u listi, dodaj ga
-  if (currentValue && !items.find(i => i.id === currentValue)) {
+  if (currentValue && !items.find(i => i[matchKey] === currentValue)) {
     items.push({id: currentValue, naziv: currentValue});
   }
   items.forEach(v => {
     const opt = document.createElement('option');
-    opt.value = v.id; opt.textContent = v.id;
+    opt.value = useNazivAsValue ? v.naziv : v.id;
+    opt.textContent = v.naziv;
     selectEl.appendChild(opt);
   });
   selectEl.value = currentValue || '';
@@ -2549,8 +2551,8 @@ function populateFormSelects(emp) {
   };
 
   populateSelect($('f_Odjel'), codes.Odjel, emp.Odjel || '', true);
-  populateSelect($('f_Radno_mjesto'), codes.Radno_mjesto, emp.Radno_mjesto || '', true);
-  populateSelect($('f_Tip_ugovora'), codes.Tip_ugovora, emp.Tip_ugovora || 'Neodređeno', false);
+  populateSelect($('f_Radno_mjesto'), codes.Radno_mjesto, emp.Radno_mjesto || '', true, true);
+  populateSelect($('f_Tip_ugovora'), codes.Tip_ugovora, emp.Tip_ugovora || 'Neodređeno', false, true);
   populateSelect($('f_Strucna_sprema'), codes.Strucna_sprema, emp.Strucna_sprema || '', true);
 }
 
@@ -3786,10 +3788,14 @@ const CODE_FIELD_MAP = {
   Strucna_sprema: 'Strucna_sprema',
 };
 
-function brojZaposlenihKojiKoriste(cat, id) {
+// Kategorije kod kojih se kod zaposlenog čuva kao puni naziv (ne kao šifarnički id)
+const CODE_MATCH_BY_NAZIV = { Radno_mjesto: true, Tip_ugovora: true };
+
+function brojZaposlenihKojiKoriste(cat, id, naziv) {
   const field = CODE_FIELD_MAP[cat];
   if (!field) return 0;
-  return employees.filter(e => (e[field] || '') === id).length;
+  const matchVal = CODE_MATCH_BY_NAZIV[cat] ? (naziv != null ? naziv : id) : id;
+  return employees.filter(e => (e[field] || '') === matchVal).length;
 }
 
 // Dohvati sve ID-ove iz šifarnika
@@ -3817,7 +3823,7 @@ function renderSingleCodeList(cat, bodyElId) {
   (codes[cat] || []).forEach((item, i) => {
     const id    = typeof item === 'string' ? item : item.id;
     const naziv = typeof item === 'string' ? item : item.naziv;
-    const brKoristi = brojZaposlenihKojiKoriste(cat, id);
+    const brKoristi = brojZaposlenihKojiKoriste(cat, id, naziv);
 
     const tr = document.createElement('tr');
 
@@ -3854,7 +3860,7 @@ function renderSingleCodeList(cat, bodyElId) {
       rvBtn.type = 'button';
       rvBtn.className = 'secondary small';
       rvBtn.style.whiteSpace = 'nowrap';
-      const r = radniRaspored.find(x => x.radno_mjesto === id);
+      const r = radniRaspored.find(x => x.radno_mjesto === naziv);
       const hasData = r && (r.smjena1 || r.slobodnih_dana !== undefined);
       rvBtn.textContent = hasData ? '⚙ Radno vrijeme' : '⚙ Podesi';
       rvBtn.addEventListener('click', () => openRasporedModal(id));
@@ -4242,9 +4248,9 @@ function planDanaPoRasporedu(raspored, datum) {
 
 // Otvori modal za radno vrijeme konkretnog radnog mjesta
 function openRasporedModal(rmId) {
-  const r = getOrCreateRaspored(rmId);
   const rmObj = (codes.Radno_mjesto || []).find(v => (typeof v === 'string' ? v : v.id) === rmId);
   const rmNaziv = rmObj ? (typeof rmObj === 'string' ? rmObj : rmObj.naziv) : rmId;
+  const r = getOrCreateRaspored(rmNaziv);
   $('rasporedRmNaziv').textContent = rmNaziv;
 
   const body = $('rasporedModalBody');
