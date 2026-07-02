@@ -2216,18 +2216,29 @@ async function loadData() {
     }));
   } catch(e) { prethodniStaz = []; }
 
-  // Odsustva i sihterica overrides ostaju localStorage (privremeni podaci)
+  // Odsustva
   try {
-    const res = localStorage.getItem('odsustva');
-    odsustva = res ? JSON.parse(res) : [];
+    const rows = await sbGet('odsustva');
+    odsustva = (rows || []).map(r => ({
+      id: r.id, _db_id: r.id,
+      emp_db_id: r.emp_db_id,
+      emp_idx: employees.findIndex(e => e._db_id === r.emp_db_id),
+      tip: r.tip, datum_od: r.datum_od || '', datum_do: r.datum_do || '',
+      napomena: r.napomena || '',
+    }));
   } catch(e) { odsustva = []; }
-  if (!Array.isArray(odsustva)) odsustva = [];
 
+  // Šihterica - ručne izmjene po danu
   try {
-    const res = localStorage.getItem('sihterica_overrides');
-    sihtericaOverrides = res ? JSON.parse(res) : [];
+    const rows = await sbGet('sihterica_overrides');
+    sihtericaOverrides = (rows || []).map(r => ({
+      _db_id: r.id,
+      emp_db_id: r.emp_db_id,
+      emp_idx: employees.findIndex(e => e._db_id === r.emp_db_id),
+      godina: r.godina, mjesec: r.mjesec, dan: r.dan,
+      tip: r.tip, pocetak: r.pocetak || '', kraj: r.kraj || '', vrijednost: r.vrijednost || '',
+    }));
   } catch(e) { sihtericaOverrides = []; }
-  if (!Array.isArray(sihtericaOverrides)) sihtericaOverrides = [];
 
   // Audit log
   try {
@@ -2466,13 +2477,31 @@ async function saveRadniRaspored() {
 }
 
 async function saveOdsustva() {
-  try { localStorage.setItem('odsustva', JSON.stringify(odsustva)); }
-  catch(e) { console.error(e); }
+  try {
+    for (const o of odsustva) {
+      if (o.emp_idx == null || o.emp_idx < 0 || !employees[o.emp_idx]) continue;
+      const emp = employees[o.emp_idx];
+      const row = {
+        emp_db_id: emp._db_id,
+        tip: o.tip, datum_od: o.datum_od || '', datum_do: o.datum_do || '',
+        napomena: o.napomena || '',
+      };
+      if (o._db_id) {
+        await _supabase.from('odsustva').update(row).eq('id', o._db_id);
+      } else {
+        const { data } = await _supabase.from('odsustva').insert(row).select();
+        if (data && data[0]) { o._db_id = data[0].id; o.emp_db_id = data[0].emp_db_id; }
+      }
+    }
+  } catch(e) { console.error(e); toast('Greška pri snimanju odsustva.'); }
 }
 
-async function saveSihtericaOverrides() {
-  try { localStorage.setItem('sihterica_overrides', JSON.stringify(sihtericaOverrides)); }
-  catch(e) { console.error(e); }
+async function deleteOdsustvo(o) {
+  try {
+    if (o._db_id) {
+      await _supabase.from('odsustva').delete().eq('id', o._db_id);
+    }
+  } catch(e) { console.error('deleteOdsustvo:', e && e.message); toast('Greška pri brisanju.'); }
 }
 
 function nextId(arr) {
@@ -6055,8 +6084,8 @@ function renderOdsustva() {
       delBtn.textContent = 'Obriši';
       delBtn.addEventListener('click', async () => {
         if (!confirm('Obrisati ovo odsustvo?')) return;
+        await deleteOdsustvo(o);
         odsustva.splice(oidx, 1);
-        await saveOdsustva();
         const empName = employees[goSelectedEmpIndex] ? employees[goSelectedEmpIndex].Ime_i_prezime : '';
         await logAction('Godišnji odmori', empName, `Obrisano odsustvo (${VRSTE_ODSUSTVA_LABELS[o.tip]})`);
         renderOdsustva();
@@ -6079,6 +6108,7 @@ $('addOdsustvoBtn').addEventListener('click', async () => {
   odsustva.push({
     id: nextId(odsustva),
     emp_idx: goSelectedEmpIndex,
+    emp_db_id: employees[goSelectedEmpIndex] ? employees[goSelectedEmpIndex]._db_id : null,
     tip,
     datum_od: datumOd,
     datum_do: datumDo,
@@ -6120,8 +6150,8 @@ function populateSihFilters() {
   const rmSel = $('sihRadnoMjestoFilter');
   const curRm = rmSel.value;
   rmSel.innerHTML = '<option value="">Sva radna mjesta</option>' + (codes.Radno_mjesto || []).map(rm => {
-    const id = typeof rm === 'string' ? rm : rm.id;
-    return `<option value="${id}">${id}</option>`;
+    const naziv = typeof rm === 'string' ? rm : rm.naziv;
+    return `<option value="${escapeXml(naziv)}">${escapeXml(naziv)}</option>`;
   }).join('');
   rmSel.value = curRm;
 }
@@ -6214,21 +6244,43 @@ function openSihOverrideEditor(dan, godina, mjesec) {
 }
 
 async function applySihOverride(dan, godina, mjesec, izbor) {
+  const emp = employees[sihSelectedEmpIndex];
+  const empDbId = emp ? emp._db_id : null;
+
   sihtericaOverrides = sihtericaOverrides.filter(o => !(o.emp_idx === sihSelectedEmpIndex && o.godina === godina && o.mjesec === mjesec && o.dan === dan));
+
+  // Ukloni prethodni red u bazi za taj dan (ako je postojao)
+  if (empDbId) {
+    try {
+      await _supabase.from('sihterica_overrides').delete()
+        .eq('emp_db_id', empDbId).eq('godina', godina).eq('mjesec', mjesec).eq('dan', dan);
+    } catch(e) { console.error(e); }
+  }
 
   if (izbor && izbor.toLowerCase() !== 'obrisi') {
     const satiMatch = izbor.match(/^(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})$/);
+    let novi = null;
     if (satiMatch) {
-      sihtericaOverrides.push({ emp_idx: sihSelectedEmpIndex, godina, mjesec, dan, tip: 'sati', pocetak: satiMatch[1], kraj: satiMatch[2] });
+      novi = { emp_idx: sihSelectedEmpIndex, emp_db_id: empDbId, godina, mjesec, dan, tip: 'sati', pocetak: satiMatch[1], kraj: satiMatch[2] };
     } else if (VRSTE_ODSUSTVA.includes(izbor) || izbor === 'go' || izbor === 'praznik') {
-      sihtericaOverrides.push({ emp_idx: sihSelectedEmpIndex, godina, mjesec, dan, tip: 'sifra', vrijednost: izbor });
+      novi = { emp_idx: sihSelectedEmpIndex, emp_db_id: empDbId, godina, mjesec, dan, tip: 'sifra', vrijednost: izbor };
     } else {
       toast('Nepoznat format. Koristi HH:MM-HH:MM ili važeću šifru.');
       return;
     }
+    sihtericaOverrides.push(novi);
+    if (empDbId) {
+      try {
+        const { data } = await _supabase.from('sihterica_overrides').insert({
+          emp_db_id: empDbId, godina, mjesec, dan,
+          tip: novi.tip, pocetak: novi.pocetak || null, kraj: novi.kraj || null, vrijednost: novi.vrijednost || null,
+        }).select();
+        if (data && data[0]) novi._db_id = data[0].id;
+      } catch(e) { console.error(e); toast('Greška pri snimanju izmjene.'); }
+    }
   }
-  await saveSihtericaOverrides();
-  const empName = employees[sihSelectedEmpIndex] ? employees[sihSelectedEmpIndex].Ime_i_prezime : '';
+
+  const empName = emp ? emp.Ime_i_prezime : '';
   await logAction('Šihterica', empName, `Ručna izmjena za dan ${dan}.${mjesec}.${godina}`);
   renderSihtericaTable();
   toast('Sačuvano.');
