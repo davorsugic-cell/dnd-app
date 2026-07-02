@@ -4675,7 +4675,40 @@ function openRasporedModal(rmId) {
 
   if (!r.izuzeci) r.izuzeci = [];
 
-  // ── 1. Smjene ─────────────────────────────────────────────
+  // ── 1. Način rasporeda ──────────────────────────────────────
+  const rezimSection = document.createElement('div');
+  rezimSection.className = 'section';
+  rezimSection.innerHTML = '<h3>Način rasporeda</h3>' +
+    '<p style="font-size:12px;color:var(--muted);margin-bottom:12px;">"Fiksni" — svi na ovom radnom mjestu rade isti raspored po danima (dobro za pozicije gdje je jedna osoba, npr. Uprava). "Automatski miks" — za svakog zaposlenog na ovom radnom mjestu sistem sam (ali dosljedno, uvijek isto za istog zaposlenog/mjesec) raspoređuje radne/slobodne dane i smjene koristeći definisane smjene ispod — dobro za pozicije sa više zaposlenih koji rotiraju (npr. Konobar).</p>';
+  const rezimRow = document.createElement('div');
+  rezimRow.style.cssText = 'display:flex; gap:10px;';
+  const btnFiksni = document.createElement('button');
+  btnFiksni.type = 'button';
+  btnFiksni.textContent = 'Fiksni raspored po danima';
+  const btnMiks = document.createElement('button');
+  btnMiks.type = 'button';
+  btnMiks.textContent = 'Automatski miks';
+  [btnFiksni, btnMiks].forEach(b => { b.className = 'secondary small'; b.disabled = !canEdit; });
+  (r.rezim === 'miks' ? btnMiks : btnFiksni).className = 'primary small';
+  btnFiksni.addEventListener('click', async () => {
+    if (r.rezim === 'fiksni') return;
+    r.rezim = 'fiksni';
+    await saveRadniRaspored();
+    toast('Sačuvano.');
+    openRasporedModal(rmId);
+  });
+  btnMiks.addEventListener('click', async () => {
+    if (r.rezim === 'miks') return;
+    r.rezim = 'miks';
+    await saveRadniRaspored();
+    toast('Sačuvano.');
+    openRasporedModal(rmId);
+  });
+  rezimRow.appendChild(btnFiksni); rezimRow.appendChild(btnMiks);
+  rezimSection.appendChild(rezimRow);
+  body.appendChild(rezimSection);
+
+  // ── 2. Smjene ─────────────────────────────────────────────
   const smjeneSection = document.createElement('div');
   smjeneSection.className = 'section';
   smjeneSection.innerHTML = '<h3>Smjene</h3>';
@@ -4779,39 +4812,6 @@ function openRasporedModal(rmId) {
   });
   smjeneSection.appendChild(smjeneGrid);
   body.appendChild(smjeneSection);
-
-  // ── 2. Način rasporeda ──────────────────────────────────────
-  const rezimSection = document.createElement('div');
-  rezimSection.className = 'section';
-  rezimSection.innerHTML = '<h3>Način rasporeda</h3>' +
-    '<p style="font-size:12px;color:var(--muted);margin-bottom:12px;">"Fiksni" — svi na ovom radnom mjestu rade isti raspored po danima (dobro za pozicije gdje je jedna osoba, npr. Uprava). "Automatski miks" — za svakog zaposlenog na ovom radnom mjestu sistem sam (ali dosljedno, uvijek isto za istog zaposlenog/mjesec) raspoređuje radne/slobodne dane i smjene koristeći definisane smjene iznad — dobro za pozicije sa više zaposlenih koji rotiraju (npr. Konobar).</p>';
-  const rezimRow = document.createElement('div');
-  rezimRow.style.cssText = 'display:flex; gap:10px;';
-  const btnFiksni = document.createElement('button');
-  btnFiksni.type = 'button';
-  btnFiksni.textContent = 'Fiksni raspored po danima';
-  const btnMiks = document.createElement('button');
-  btnMiks.type = 'button';
-  btnMiks.textContent = 'Automatski miks';
-  [btnFiksni, btnMiks].forEach(b => { b.className = 'secondary small'; b.disabled = !canEdit; });
-  (r.rezim === 'miks' ? btnMiks : btnFiksni).className = 'primary small';
-  btnFiksni.addEventListener('click', async () => {
-    if (r.rezim === 'fiksni') return;
-    r.rezim = 'fiksni';
-    await saveRadniRaspored();
-    toast('Sačuvano.');
-    openRasporedModal(rmId);
-  });
-  btnMiks.addEventListener('click', async () => {
-    if (r.rezim === 'miks') return;
-    r.rezim = 'miks';
-    await saveRadniRaspored();
-    toast('Sačuvano.');
-    openRasporedModal(rmId);
-  });
-  rezimRow.appendChild(btnFiksni); rezimRow.appendChild(btnMiks);
-  rezimSection.appendChild(rezimRow);
-  body.appendChild(rezimSection);
 
   if (r.rezim === 'miks') {
     // ── 3a. Automatski miks - broj slobodnih dana ──────────────
@@ -5702,14 +5702,32 @@ function generisiRasporedMjeseca(radnoMjesto, godina, mjesec, firmaId, empSeed) 
   // Raspodjeljuje ciljani broj SATI (cio broj) na dati niz radnih dana, što
   // ravnomjernije, uz zaokruživanje na pune sate (razlika se raspodjeljuje na
   // prve dane u nizu da zbir bude tačan).
+  // Raspodjeljuje ciljani broj SATI (cio broj) na dati niz radnih dana PROPORCIONALNO
+  // njihovim IZVORNO konfigurisanim dužinama smjena (npr. ako petak ima izuzetak sa
+  // dužom smjenom, petak i dalje ostaje duži od ostalih dana nakon uklapanja na tačan
+  // sedmični fond - ne izjednačava sve dane na isti broj sati).
   function rasporediCijeleSate(radniDani, ciljaniUkupno) {
     if (!radniDani.length) return;
-    const n = radniDani.length;
-    const baza = Math.floor(ciljaniUkupno / n);
-    let ostatak = ciljaniUkupno - baza * n; // koliko dana treba +1 sat povrh baze
+    const izvornoUkupno = radniDani.reduce((s, x) => s + x.sati, 0);
+    let sirovi;
+    if (izvornoUkupno > 0) {
+      sirovi = radniDani.map(x => x.sati / izvornoUkupno * ciljaniUkupno);
+    } else {
+      const jednako = ciljaniUkupno / radniDani.length;
+      sirovi = radniDani.map(() => jednako);
+    }
+    const bazni = sirovi.map(v => Math.floor(v));
+    let ostatakSati = ciljaniUkupno - bazni.reduce((a, b) => a + b, 0);
+    // Preostale (cijele) sate dodijeli danima sa najvećim decimalnim ostatkom (metoda najvećeg ostatka)
+    const poredakOstatka = sirovi
+      .map((v, idx) => ({ idx, frac: v - Math.floor(v) }))
+      .sort((a, b) => b.frac - a.frac);
+    const finalni = bazni.slice();
+    for (let k = 0; k < ostatakSati && k < poredakOstatka.length; k++) {
+      finalni[poredakOstatka[k].idx] += 1;
+    }
     radniDani.forEach((x, idx) => {
-      const sati = baza + (idx < ostatak ? 1 : 0);
-      postaviSate(x, sati);
+      postaviSate(x, Math.max(0, finalni[idx]));
       x.uklopljeno = true;
     });
   }
@@ -6430,7 +6448,7 @@ function sihtericaHtmlZaZaposlenog(empIdx, godina, mjesec) {
   // Širine kolona (%) - preuzete iz zvaničnog obrasca (18 kolona)
   const W = [9.25, 7.69, 7.97, 5.31, 5.31, 3.98, 3.98, 5.31, 5.31, 5.31, 5.31, 5.31, 5.31, 5.31, 3.99, 5.31, 5.31, 4.77];
 
-  const td = (content, extra) => `<td style="border:1px solid #000; padding:1px 1px; text-align:center; font-size:6.6px; line-height:1.1; overflow:hidden;${extra || ''}">${content || ''}</td>`;
+  const td = (content, extra) => `<td style="border:1px solid #000; padding:1.5px 1px; text-align:center; font-size:7.5px; line-height:1.15; overflow:hidden;${extra || ''}">${content || ''}</td>`;
 
   const redovi = dani.map(d => {
     const sati = d.redovnoSati ? d.redovnoSati.toFixed(2) : '';
@@ -6472,23 +6490,24 @@ function sihtericaHtmlZaZaposlenog(empIdx, godina, mjesec) {
       '</tr>';
   }).join('');
 
-  const thS = (content, extra) => `<th style="border:1px solid #000; padding:1px 1px; font-size:6.6px; font-weight:600; line-height:1.1;${extra || ''}">${content}</th>`;
+  const thS = (content, extra) => `<th style="border:1px solid #000; padding:2px 1px; font-size:8px; font-weight:600; line-height:1.1; writing-mode:vertical-rl; transform:rotate(180deg); white-space:nowrap; height:100px; vertical-align:middle;${extra || ''}">${content}</th>`;
+  const thGroup = (content, colspan) => `<th colspan="${colspan}" style="border:1px solid #000; padding:2px; font-size:8.5px; font-weight:600;">${content}</th>`;
   const colgroup = '<colgroup>' + W.map(w => `<col style="width:${w}%;">`).join('') + '</colgroup>';
 
   return `
     <div style="page-break-after:always; font-family:'Times New Roman', Times, serif; padding:0; color:#000;">
-      <h2 style="text-align:center; font-size:13px; margin:0 0 4px; font-weight:700;">Евиденција о присуству радника на раду и одсуствима</h2>
+      <h2 style="text-align:center; font-size:14px; margin:0 0 4px; font-weight:700;">Евиденција о присуству радника на раду и одсуствима</h2>
       <p style="text-align:center; margin:0 0 10px; font-size:11px;">за мјесец <strong>${MJESECI_CIRILICA[mjesec - 1]}</strong> <strong>${godina}.</strong> године.</p>
       <p style="margin:0 0 8px; font-size:11px;"><strong>Име и презиме радника:</strong> ${emp.Ime_i_prezime || ''}</p>
       <table style="width:100%; border-collapse:collapse; table-layout:fixed;">
         ${colgroup}
         <thead>
           <tr>
-            ${thS('Датум')}
-            <th colspan="2" style="border:1px solid #000; padding:1px; font-size:6.6px; font-weight:600;">Вријеме сати: минута</th>
-            <th colspan="6" style="border:1px solid #000; padding:1px; font-size:6.6px; font-weight:600;">Вријеме проведено на раду (часова)</th>
-            ${thS('Приправност (часова)')}
-            <th colspan="8" style="border:1px solid #000; padding:1px; font-size:6.6px; font-weight:600;">Вријеме одсутности са рада (часова)</th>
+            <th style="border:1px solid #000; padding:2px; font-size:8.5px; font-weight:600;">Датум</th>
+            ${thGroup('Вријеме сати: минута', 2)}
+            ${thGroup('Вријеме проведено на раду (часова)', 6)}
+            <th style="border:1px solid #000; padding:2px; font-size:8.5px; font-weight:600; writing-mode:vertical-rl; transform:rotate(180deg); white-space:nowrap;">Приправност (часова)</th>
+            ${thGroup('Вријеме одсутности са рада (часова)', 8)}
           </tr>
           <tr>
             <th style="border:1px solid #000;"></th>
@@ -6542,7 +6561,7 @@ function stampajSihtericu(empIndexes, godina, mjesec) {
   const sviHtml = empIndexes.map(idx => sihtericaHtmlZaZaposlenog(idx, godina, mjesec)).join('');
   printInline(`
     <style>
-      @page { size: A4 portrait; margin: 12.7mm; }
+      @page { size: A4 landscape; margin: 10mm; }
       #printArea table { table-layout: fixed; width: 100%; }
     </style>
     ${sviHtml}
