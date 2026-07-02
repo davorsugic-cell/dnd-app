@@ -2196,6 +2196,7 @@ async function loadData() {
         smjena1: r.smjena1 || { od:'', do:'' },
         smjena2: r.smjena2 || { od:'', do:'' },
         medju:   r.medju   || { od:'', do:'' },
+        dani: r.dani || null,
         slobodnih_dana: r.slobodnih_dana ?? 2,
         izuzeci: r.izuzeci || [],
       }));
@@ -2465,6 +2466,7 @@ async function saveRadniRaspored() {
     for (const r of radniRaspored) {
       const row = { radno_mjesto: r.radno_mjesto, firma_id: r.firma_id || null,
         smjena1: r.smjena1, smjena2: r.smjena2, medju: r.medju,
+        dani: r.dani || null,
         slobodnih_dana: r.slobodnih_dana ?? 2, izuzeci: r.izuzeci || [] };
       if (r._db_id) {
         await _supabase.from('radni_raspored').update(row).eq('id', r._db_id);
@@ -4610,6 +4612,7 @@ function getOrCreateRaspored(radnoMjesto) {
       smjena1:        { od: '', do: '' },
       smjena2:        { od: '', do: '' },
       medju:          { od: '', do: '' },
+      dani:           { pon:'1', uto:'1', sre:'1', cet:'1', pet:'1', sub:'slobodno', ned:'slobodno' },
       slobodnih_dana: 2,
     };
     radniRaspored.push(r);
@@ -4618,6 +4621,7 @@ function getOrCreateRaspored(radnoMjesto) {
   if (!r.smjena1) r.smjena1 = { od: '', do: '' };
   if (!r.smjena2) r.smjena2 = { od: '', do: '' };
   if (!r.medju)   r.medju   = { od: '', do: '' };
+  if (!r.dani)    r.dani    = { pon:'1', uto:'1', sre:'1', cet:'1', pet:'1', sub:'slobodno', ned:'slobodno' };
   return r;
 }
 
@@ -4629,15 +4633,6 @@ function jeSmjenaAktivna(smjena) {
   if (!od && !do_) return false;
   if (od === '00:00' && do_ === '00:00') return false;
   return true;
-}
-
-function planDanaPoRasporedu(raspored, datum) {
-  if (!raspored) return { pocetak: '', kraj: '' };
-  // Uzmi prvu aktivnu smjenu
-  if (jeSmjenaAktivna(raspored.smjena1)) return { pocetak: raspored.smjena1.od, kraj: raspored.smjena1.do };
-  if (jeSmjenaAktivna(raspored.smjena2)) return { pocetak: raspored.smjena2.od, kraj: raspored.smjena2.do };
-  if (jeSmjenaAktivna(raspored.medju))   return { pocetak: raspored.medju.od,   kraj: raspored.medju.do };
-  return { pocetak: '', kraj: '' };
 }
 
 
@@ -4652,8 +4647,8 @@ function openRasporedModal(rmId) {
   body.innerHTML = '';
   const canEdit = canEditAny('sifarnici');
 
-  const DANI_LABELS = { pon:'Ponedjeljak', uto:'Utorak', sri:'Srijeda', cet:'Četvrtak', pet:'Petak', sub:'Subota', ned:'Nedjelja' };
-  const DANI_KEYS = ['pon','uto','sri','cet','pet','sub','ned'];
+  const DANI_LABELS = { pon:'Ponedjeljak', uto:'Utorak', sre:'Srijeda', cet:'Četvrtak', pet:'Petak', sub:'Subota', ned:'Nedjelja' };
+  const DANI_KEYS = ['pon','uto','sre','cet','pet','sub','ned'];
 
   if (!r.izuzeci) r.izuzeci = [];
 
@@ -4697,139 +4692,50 @@ function openRasporedModal(rmId) {
   smjeneSection.appendChild(smjeneGrid);
   body.appendChild(smjeneSection);
 
-  // ── 2. Slobodni dani ──────────────────────────────────────
-  const slobodniSection = document.createElement('div');
-  slobodniSection.className = 'section';
-  slobodniSection.innerHTML = '<h3>Slobodni dani u sedmici</h3>';
-  const slobodniRow = document.createElement('div');
-  slobodniRow.style.cssText = 'display:flex;align-items:center;gap:12px;';
-  const slobodniInp = document.createElement('input');
-  slobodniInp.type='number'; slobodniInp.min=0; slobodniInp.max=6;
-  slobodniInp.value = r.slobodnih_dana !== undefined ? r.slobodnih_dana : 2;
-  slobodniInp.style.cssText='width:70px;text-align:center;font-size:20px;font-weight:700;border:2px solid var(--line);border-radius:8px;padding:6px;';
-  slobodniInp.disabled = !canEdit;
-  const slobodniLbl = document.createElement('span');
-  slobodniLbl.style.cssText='font-size:13px;color:var(--muted);';
-  slobodniLbl.textContent='slobodnih dana (šihterica raspoređuje automatski)';
-  slobodniInp.addEventListener('change', async () => {
-    r.slobodnih_dana = Math.max(0, Math.min(6, parseInt(slobodniInp.value)||0));
-    await saveRadniRaspored(); toast('Sačuvano.');
-  });
-  slobodniRow.appendChild(slobodniInp); slobodniRow.appendChild(slobodniLbl);
-  slobodniSection.appendChild(slobodniRow);
-  body.appendChild(slobodniSection);
+  // ── 2. Raspored po danima u sedmici ────────────────────────
+  const daniSection = document.createElement('div');
+  daniSection.className = 'section';
+  daniSection.innerHTML = '<h3>Raspored po danima u sedmici</h3>' +
+    '<p style="font-size:12px;color:var(--muted);margin-bottom:12px;">Za svaki dan izaberi da li se radi i u kojoj smjeni. "Svaka druga sedmica" znači da se taj dan radi samo neparne (ISO) sedmice — npr. za pravilo "svaka druga subota".</p>';
+  const daniList = document.createElement('div');
+  daniList.style.cssText = 'display:flex;flex-direction:column;gap:8px;';
 
-  // ── 3. Izuzeci (specifični dani) ──────────────────────────
-  const izuzeciSection = document.createElement('div');
-  izuzeciSection.className = 'section';
-  izuzeciSection.innerHTML = '<h3>Izuzeci — posebno radno vrijeme po danu</h3><p style="font-size:12px;color:var(--muted);margin-bottom:12px;">Npr. petak i subota rade do 01:00 umjesto uobičajenog.</p>';
+  const DANI_OPCIJE = [
+    { v: 'slobodno', t: 'Slobodan dan' },
+    { v: '1', t: 'Radi \u2013 Smjena 1' },
+    { v: '2', t: 'Radi \u2013 Smjena 2' },
+    { v: 'svaka_druga1', t: 'Svaka druga sedmica \u2013 Smjena 1' },
+    { v: 'svaka_druga2', t: 'Svaka druga sedmica \u2013 Smjena 2' },
+  ];
 
-  const renderIzuzeci = () => {
-    const existingList = izuzeciSection.querySelector('.izuzeci-list');
-    if (existingList) existingList.remove();
-    const list = document.createElement('div');
-    list.className = 'izuzeci-list';
-    list.style.cssText = 'display:flex;flex-direction:column;gap:8px;margin-bottom:12px;';
-
-    r.izuzeci.forEach((iz, idx) => {
-      const row = document.createElement('div');
-      row.style.cssText = 'display:flex;gap:8px;align-items:center;background:#f8f9fb;border:1px solid var(--line);border-radius:7px;padding:8px 12px;';
-
-      const dayLbl = document.createElement('span');
-      dayLbl.style.cssText = 'font-weight:700;font-size:13px;min-width:110px;';
-      dayLbl.textContent = DANI_LABELS[iz.dan] || iz.dan;
-
-      const smjLbl = document.createElement('span');
-      smjLbl.style.cssText = 'font-size:12px;color:var(--muted);min-width:90px;';
-      smjLbl.textContent = iz.smjena === 'smjena1' ? 'Smjena 1' : iz.smjena === 'smjena2' ? 'Smjena 2' : iz.smjena === 'medju' ? 'Međusmjena' : 'Prilagođeno';
-
-      const odInp = document.createElement('input'); odInp.type='time'; odInp.value=iz.od||''; odInp.style.width='100px'; odInp.disabled=!canEdit;
-      const sep = document.createElement('span'); sep.textContent='–'; sep.style.color='var(--muted)';
-      const doInp = document.createElement('input'); doInp.type='time'; doInp.value=iz.do||''; doInp.style.width='100px'; doInp.disabled=!canEdit;
-
-      const saveIz = async () => { iz.od=odInp.value; iz.do=doInp.value; await saveRadniRaspored(); toast('Sačuvano.'); };
-      odInp.addEventListener('change', saveIz); doInp.addEventListener('change', saveIz);
-
-      const delBtn = document.createElement('button');
-      delBtn.type='button'; delBtn.className='ghost small';
-      delBtn.style.cssText='color:#a33;border-color:#a33;margin-left:auto;';
-      delBtn.textContent='Ukloni';
-      delBtn.addEventListener('click', async () => {
-        r.izuzeci.splice(idx, 1);
-        await saveRadniRaspored();
-        renderIzuzeci();
-        toast('Izuzetak uklonjen.');
-      });
-
-      row.appendChild(dayLbl); row.appendChild(smjLbl);
-      row.appendChild(odInp); row.appendChild(sep); row.appendChild(doInp);
-      if (canEdit) row.appendChild(delBtn);
-      list.appendChild(row);
+  DANI_KEYS.forEach(dk => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:6px 10px;border:1px solid var(--line);border-radius:7px;';
+    const lbl = document.createElement('span');
+    lbl.style.cssText = 'font-weight:700;font-size:13px;min-width:110px;';
+    lbl.textContent = DANI_LABELS[dk];
+    const sel = document.createElement('select');
+    sel.style.flex = '1';
+    sel.disabled = !canEdit;
+    DANI_OPCIJE.forEach(o => {
+      const opt = document.createElement('option');
+      opt.value = o.v; opt.textContent = o.t;
+      sel.appendChild(opt);
     });
-
-    izuzeciSection.appendChild(list);
-  };
-  renderIzuzeci();
-
-  // Forma za dodavanje izuzetka
-  if (canEdit) {
-    const addRow = document.createElement('div');
-    addRow.style.cssText = 'display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;padding:10px 12px;background:var(--accent-soft);border-radius:8px;';
-
-    const danWrap = document.createElement('div'); danWrap.className='field'; danWrap.style.margin='0';
-    danWrap.innerHTML='<label style="font-size:11px;">Dan</label>';
-    const danSel = document.createElement('select');
-    DANI_KEYS.forEach(d => { const o=document.createElement('option'); o.value=d; o.textContent=DANI_LABELS[d]; danSel.appendChild(o); });
-    danWrap.appendChild(danSel);
-
-    const smjWrap = document.createElement('div'); smjWrap.className='field'; smjWrap.style.margin='0';
-    smjWrap.innerHTML='<label style="font-size:11px;">Smjena</label>';
-    const smjSel = document.createElement('select');
-    [
-      {v:'smjena1', t:'Smjena 1'}, {v:'smjena2', t:'Smjena 2'},
-      {v:'medju', t:'Međusmjena'}, {v:'custom', t:'Prilagođeno'},
-    ].forEach(o => { const el=document.createElement('option'); el.value=o.v; el.textContent=o.t; smjSel.appendChild(el); });
-    smjWrap.appendChild(smjSel);
-
-    const odWrap = document.createElement('div'); odWrap.className='field'; odWrap.style.margin='0';
-    odWrap.innerHTML='<label style="font-size:11px;">Od</label>';
-    const odInp = document.createElement('input'); odInp.type='time'; odInp.value='16:00'; odInp.style.width='105px';
-    odWrap.appendChild(odInp);
-
-    const doWrap = document.createElement('div'); doWrap.className='field'; doWrap.style.margin='0';
-    doWrap.innerHTML='<label style="font-size:11px;">Do</label>';
-    const doInp = document.createElement('input'); doInp.type='time'; doInp.value='01:00'; doInp.style.width='105px';
-    doWrap.appendChild(doInp);
-
-    // Kad se odabere smjena, popuni od/do automatski
-    smjSel.addEventListener('change', () => {
-      const v = smjSel.value;
-      if (v === 'smjena1' && r.smjena1) { odInp.value=r.smjena1.od||''; doInp.value=r.smjena1.do||''; }
-      else if (v === 'smjena2' && r.smjena2) { odInp.value=r.smjena2.od||''; doInp.value=r.smjena2.do||''; }
-      else if (v === 'medju' && r.medju) { odInp.value=r.medju.od||''; doInp.value=r.medju.do||''; }
-    });
-
-    const dodajBtn = document.createElement('button');
-    dodajBtn.type='button'; dodajBtn.className='primary small'; dodajBtn.textContent='+ Dodaj izuzetak';
-    dodajBtn.style.marginTop='18px';
-    dodajBtn.addEventListener('click', async () => {
-      const dan = danSel.value;
-      if (r.izuzeci.find(i => i.dan === dan)) {
-        toast(`Izuzetak za ${DANI_LABELS[dan]} već postoji — ukloni ga prvo.`); return;
-      }
-      r.izuzeci.push({ dan, smjena: smjSel.value, od: odInp.value, do: doInp.value });
+    sel.value = (r.dani && r.dani[dk]) || 'slobodno';
+    sel.addEventListener('change', async () => {
+      if (!r.dani) r.dani = {};
+      r.dani[dk] = sel.value;
       await saveRadniRaspored();
-      renderIzuzeci();
-      toast(`Izuzetak za ${DANI_LABELS[dan]} dodan.`);
+      toast('Sačuvano.');
     });
+    row.appendChild(lbl); row.appendChild(sel);
+    daniList.appendChild(row);
+  });
 
-    addRow.appendChild(danWrap); addRow.appendChild(smjWrap);
-    addRow.appendChild(odWrap); addRow.appendChild(doWrap);
-    addRow.appendChild(dodajBtn);
-    izuzeciSection.appendChild(addRow);
-  }
+  daniSection.appendChild(daniList);
+  body.appendChild(daniSection);
 
-  body.appendChild(izuzeciSection);
   $('rasporedOverlay').classList.add('open');
 }
 
@@ -5571,8 +5477,10 @@ function planDanaPoRasporedu(raspored, datum) {
   if (!raspored) return { smjena: null, pocetak: '', kraj: '', sati: 0 };
   const danKey = DAN_INDEX_TO_KEY[datum.getDay()];
   let vrijednost = raspored.dani ? raspored.dani[danKey] : null;
-  if (vrijednost === 'svaka_druga') {
+  if (vrijednost === 'svaka_druga' || vrijednost === 'svaka_druga1') {
     vrijednost = jeRadnaSvakaDrugaSubota(datum) ? '1' : 'slobodno';
+  } else if (vrijednost === 'svaka_druga2') {
+    vrijednost = jeRadnaSvakaDrugaSubota(datum) ? '2' : 'slobodno';
   }
   if (!vrijednost || vrijednost === 'slobodno') return { smjena: null, pocetak: '', kraj: '', sati: 0 };
   const smjenaDef = vrijednost === '2' ? raspored.smjena2 : raspored.smjena1;
