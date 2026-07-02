@@ -6419,13 +6419,18 @@ $('sihEmployeeSelect').addEventListener('change', () => {
 });
 $('sihGenerisiBtn').addEventListener('click', () => renderSihtericaTable());
 
+const MJESECI_CIRILICA = ['јануар','фебруар','март','април','мај','јуни','јули','август','септембар','октобар','новембар','децембар'];
+
 function sihtericaHtmlZaZaposlenog(empIdx, godina, mjesec) {
   const emp = employees[empIdx];
   const dani = generisiSihtericuZaZaposlenog(empIdx, godina, mjesec);
   let ukupnoRad = 0, ukupnoNocni = 0, ukupnoPrekovremeni = 0, ukupnoPraznikRad = 0, ukupnoTerenski = 0, ukupnoDezurstvo = 0, ukupnoPripravnost = 0;
   let ukupnoGO = 0, ukupnoPraznik = 0, ukupnoBolovanje = 0, ukupnoPorodiljsko = 0, ukupnoPlaceno = 0, ukupnoNeplaceno = 0, ukupnoBezKrivice = 0, ukupnoDrugiOsnov = 0;
 
-  const td = (content, extra) => `<td style="border:1px solid #888; padding:2px 1px; text-align:center; font-size:8px; overflow:hidden;${extra || ''}">${content || ''}</td>`;
+  // Širine kolona (%) - preuzete iz zvaničnog obrasca (18 kolona)
+  const W = [9.25, 7.69, 7.97, 5.31, 5.31, 3.98, 3.98, 5.31, 5.31, 5.31, 5.31, 5.31, 5.31, 5.31, 3.99, 5.31, 5.31, 4.77];
+
+  const td = (content, extra) => `<td style="border:1px solid #000; padding:1px 1px; text-align:center; font-size:6.6px; line-height:1.1; overflow:hidden;${extra || ''}">${content || ''}</td>`;
 
   const redovi = dani.map(d => {
     const sati = d.redovnoSati ? d.redovnoSati.toFixed(2) : '';
@@ -6467,48 +6472,50 @@ function sihtericaHtmlZaZaposlenog(empIdx, godina, mjesec) {
       '</tr>';
   }).join('');
 
-  const thS = (content, extra) => `<th style="border:1px solid #888; padding:2px 1px; font-size:7.5px; font-weight:600; line-height:1.15;${extra || ''}">${content}</th>`;
+  const thS = (content, extra) => `<th style="border:1px solid #000; padding:1px 1px; font-size:6.6px; font-weight:600; line-height:1.1;${extra || ''}">${content}</th>`;
+  const colgroup = '<colgroup>' + W.map(w => `<col style="width:${w}%;">`).join('') + '</colgroup>';
 
   return `
-    <div style="page-break-after:always; font-family:Arial, sans-serif; padding:24px; color:#16243D;">
-      <h2 style="text-align:center; font-size:15px; margin-bottom:2px;">Evidencija o prisustvu radnika na radu i odsustvima</h2>
-      <p style="text-align:center; margin-top:0;">za mjesec <strong>${MJESECI_NAZIVI[mjesec - 1]}</strong> <strong>${godina}.</strong> godine</p>
-      <p style="margin-top:18px;"><strong>Ime i prezime radnika:</strong> ${emp.Ime_i_prezime || ''}</p>
-      <table style="width:100%; border-collapse:collapse; margin-top:10px;">
+    <div style="page-break-after:always; font-family:'Times New Roman', Times, serif; padding:0; color:#000;">
+      <h2 style="text-align:center; font-size:13px; margin:0 0 4px; font-weight:700;">Евиденција о присуству радника на раду и одсуствима</h2>
+      <p style="text-align:center; margin:0 0 10px; font-size:11px;">за мјесец <strong>${MJESECI_CIRILICA[mjesec - 1]}</strong> <strong>${godina}.</strong> године.</p>
+      <p style="margin:0 0 8px; font-size:11px;"><strong>Име и презиме радника:</strong> ${emp.Ime_i_prezime || ''}</p>
+      <table style="width:100%; border-collapse:collapse; table-layout:fixed;">
+        ${colgroup}
         <thead>
           <tr>
-            ${thS('Datum', 'min-width:30px;')}
-            ${thS('Vrijeme sati: minuta', 'min-width:60px;')}
-            <th colspan="9" style="border:1px solid #888; padding:2px; font-size:8.5px; font-weight:600;">Vrijeme provedeno na radu (časova)</th>
-            ${thS('Pripravnost (časova)')}
-            <th colspan="7" style="border:1px solid #888; padding:2px; font-size:8.5px; font-weight:600;">Vrijeme odsutnosti sa rada (časova)</th>
+            ${thS('Датум')}
+            <th colspan="2" style="border:1px solid #000; padding:1px; font-size:6.6px; font-weight:600;">Вријеме сати: минута</th>
+            <th colspan="6" style="border:1px solid #000; padding:1px; font-size:6.6px; font-weight:600;">Вријеме проведено на раду (часова)</th>
+            ${thS('Приправност (часова)')}
+            <th colspan="8" style="border:1px solid #000; padding:1px; font-size:6.6px; font-weight:600;">Вријеме одсутности са рада (часова)</th>
           </tr>
           <tr>
-            <th style="border:1px solid #888;"></th>
-            ${thS('Početak rada')}
-            ${thS('Završetak rada')}
-            ${thS('Redovno radno vrijeme')}
-            ${thS('Rad noću')}
-            ${thS('Prekovremeni rad')}
-            ${thS('Rad na dan praznika')}
-            ${thS('Terenski rad')}
-            ${thS('Dežurstvo')}
-            <th style="border:1px solid #888;"></th>
-            ${thS('Odmor (sedmični/godišnji)')}
-            ${thS('Neradni dani \u2013 praznik')}
-            ${thS('Privremena nesposobnost')}
-            ${thS('Porodiljsko odsustvo')}
-            ${thS('Plaćeno odsustvo')}
-            ${thS('Neplaćeno odsustvo')}
-            ${thS('Odsustvo bez krivice radnika')}
-            ${thS('Odsustvo po drugom osnovu')}
+            <th style="border:1px solid #000;"></th>
+            ${thS('Почетак рада')}
+            ${thS('Завршетак рада')}
+            ${thS('Редовно радно вријеме')}
+            ${thS('Рад ноћу')}
+            ${thS('Прековремени рад')}
+            ${thS('Рад на дан празника')}
+            ${thS('Теренски рад')}
+            ${thS('Дежурство')}
+            <th style="border:1px solid #000;"></th>
+            ${thS('Одмор (седмични/годишњи)')}
+            ${thS('Нерадни дани \u2013 празник')}
+            ${thS('Привремена неспособност')}
+            ${thS('Породиљско одсуство')}
+            ${thS('Плаћено одсуство')}
+            ${thS('Неплаћено одсуство')}
+            ${thS('Одсуство са рада без кривице радника')}
+            ${thS('Одсуство по другом основу')}
           </tr>
         </thead>
         <tbody>${redovi}</tbody>
         <tfoot>
           <tr>
-            ${td('UKUPNO', 'font-weight:bold;')}
-            <td colspan="2" style="border:1px solid #888;"></td>
+            ${td('УКУПНО', 'font-weight:bold;')}
+            <td colspan="2" style="border:1px solid #000;"></td>
             ${td(ukupnoRad.toFixed(2), 'font-weight:bold;')}
             ${td(ukupnoNocni.toFixed(2), 'font-weight:bold;')}
             ${td(ukupnoPrekovremeni.toFixed(2), 'font-weight:bold;')}
@@ -6535,7 +6542,7 @@ function stampajSihtericu(empIndexes, godina, mjesec) {
   const sviHtml = empIndexes.map(idx => sihtericaHtmlZaZaposlenog(idx, godina, mjesec)).join('');
   printInline(`
     <style>
-      @page { size: A4 landscape; margin: 10mm; }
+      @page { size: A4 portrait; margin: 12.7mm; }
       #printArea table { table-layout: fixed; width: 100%; }
     </style>
     ${sviHtml}
