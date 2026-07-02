@@ -3402,6 +3402,7 @@ $('empForm').addEventListener('submit', async (e) => {
     $('deleteBtn').style.display = isAdmin ? '' : 'none';
   } else {
     const oldEmp = employees[editingIndex];
+    emp._db_id = oldEmp._db_id;
     const changes = diffEmployee(oldEmp, emp);
     employees[editingIndex] = emp;
     renumber();
