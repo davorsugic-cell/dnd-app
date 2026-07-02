@@ -1249,18 +1249,29 @@
     <div id="goSummaryWrap"></div>
 
     <div class="section">
-      <h3>Prethodni radni staž <span class="opt" style="font-weight:400">(kod drugih poslodavaca, ulazi u ukupan staž za uvećanje dana GO)</span></h3>
-      <div id="prethodniStazBody"></div>
-      <div class="grid" style="margin-top:8px;">
-        <div class="field"><label>Godine</label><input type="number" id="ps_godine" placeholder="0"></div>
-        <div class="field"><label>Mjeseci</label><input type="number" id="ps_mjeseci" placeholder="0" min="0" max="11"></div>
-        <div class="field"><label>Dani</label><input type="number" id="ps_dani" placeholder="0" min="0" max="30"></div>
-        <div class="field full"><label>Napomena <span class="opt">(npr. naziv prethodnog poslodavca)</span></label><input type="text" id="ps_napomena"></div>
+      <h3>Novo korištenje godišnjeg odmora</h3>
+      <div class="grid">
+        <div class="field"><label>Godina</label><input type="number" id="go_godina" placeholder="npr. 2026"></div>
+        <div class="field"><label>Period od</label><input type="text" id="go_datum_od" placeholder="dd.mm.gggg"></div>
+        <div class="field"><label>Period do</label><input type="text" id="go_datum_do" placeholder="dd.mm.gggg"></div>
+        <div class="field"><label>Broj dana</label><input type="number" id="go_broj_dana" placeholder="izračunava se automatski, ili upiši ručno"></div>
+        <div class="field full"><label>Napomena <span class="opt">(opciono)</span></label><input type="text" id="go_napomena"></div>
       </div>
-      <div class="modal-actions" style="justify-content:flex-start; margin-top:10px;">
-        <button type="button" class="secondary small" id="addPrethodniStazBtn">+ Dodaj stavku staža</button>
+      <div class="modal-actions" style="justify-content:flex-start; margin-top:10px; flex-wrap:wrap;">
+        <button type="button" class="primary small" id="addGoKoristenjeBtn">+ Dodaj korištenje</button>
+        <label style="display:flex; align-items:center; gap:6px; font-size:12px; font-weight:700; cursor:pointer;">
+          <input type="checkbox" id="go_stampaj_rjesenje" checked>
+          Odštampaj Rješenje o GO odmah
+        </label>
       </div>
-      <div id="prethodniStazTotal" style="font-size:12px; color:var(--muted); margin-top:8px;"></div>
+    </div>
+
+    <div class="table-wrap" style="max-height:35vh;">
+      <table>
+        <thead><tr><th>Godina</th><th>Period</th><th>Broj dana</th><th>Napomena</th><th></th><th></th></tr></thead>
+        <tbody id="goKoristenjaBody"></tbody>
+      </table>
+      <div class="empty" id="goKoristenjaEmpty" style="display:none;">Nema unesenih korištenja godišnjeg odmora za ovog zaposlenog.</div>
     </div>
 
     <div class="section">
@@ -1287,29 +1298,18 @@
     </div>
 
     <div class="section">
-      <h3>Novo korištenje godišnjeg odmora</h3>
-      <div class="grid">
-        <div class="field"><label>Godina</label><input type="number" id="go_godina" placeholder="npr. 2026"></div>
-        <div class="field"><label>Period od</label><input type="text" id="go_datum_od" placeholder="dd.mm.gggg"></div>
-        <div class="field"><label>Period do</label><input type="text" id="go_datum_do" placeholder="dd.mm.gggg"></div>
-        <div class="field"><label>Broj dana</label><input type="number" id="go_broj_dana" placeholder="izračunava se automatski, ili upiši ručno"></div>
-        <div class="field full"><label>Napomena <span class="opt">(opciono)</span></label><input type="text" id="go_napomena"></div>
+      <h3>Radni staž <span class="opt" style="font-weight:400">(staž kod ove firme se računa automatski od datuma stupanja na rad; ovdje se unosi samo staž kod PRETHODNIH poslodavaca, ako postoji)</span></h3>
+      <div id="prethodniStazBody"></div>
+      <div class="grid" style="margin-top:8px;">
+        <div class="field"><label>Godine</label><input type="number" id="ps_godine" placeholder="0"></div>
+        <div class="field"><label>Mjeseci</label><input type="number" id="ps_mjeseci" placeholder="0" min="0" max="11"></div>
+        <div class="field"><label>Dani</label><input type="number" id="ps_dani" placeholder="0" min="0" max="30"></div>
+        <div class="field full"><label>Napomena <span class="opt">(npr. naziv prethodnog poslodavca)</span></label><input type="text" id="ps_napomena"></div>
       </div>
-      <div class="modal-actions" style="justify-content:flex-start; margin-top:10px; flex-wrap:wrap;">
-        <button type="button" class="primary small" id="addGoKoristenjeBtn">+ Dodaj korištenje</button>
-        <label style="display:flex; align-items:center; gap:6px; font-size:12px; font-weight:700; cursor:pointer;">
-          <input type="checkbox" id="go_stampaj_rjesenje" checked>
-          Odštampaj Rješenje o GO odmah
-        </label>
+      <div class="modal-actions" style="justify-content:flex-start; margin-top:10px;">
+        <button type="button" class="secondary small" id="addPrethodniStazBtn">+ Dodaj stavku staža kod prethodnog poslodavca</button>
       </div>
-    </div>
-
-    <div class="table-wrap" style="max-height:35vh;">
-      <table>
-        <thead><tr><th>Godina</th><th>Period</th><th>Broj dana</th><th>Napomena</th><th></th><th></th></tr></thead>
-        <tbody id="goKoristenjaBody"></tbody>
-      </table>
-      <div class="empty" id="goKoristenjaEmpty" style="display:none;">Nema unesenih korištenja godišnjeg odmora za ovog zaposlenog.</div>
+      <div id="prethodniStazTotal" style="font-size:12px; color:var(--muted); margin-top:8px;"></div>
     </div>
     </div><!-- /goDetaljiWrap -->
 
@@ -5839,6 +5839,23 @@ $('saveGoSettingsBtn').addEventListener('click', async () => {
 });
 
 // ---------- Prethodni radni staž ----------
+// Razlika između dva datuma izražena u punim godinama/mjesecima/danima (kalendarski).
+function razlikaGodMjesDan(od, do_) {
+  let godine = do_.getFullYear() - od.getFullYear();
+  let mjeseci = do_.getMonth() - od.getMonth();
+  let dani = do_.getDate() - od.getDate();
+  if (dani < 0) {
+    mjeseci -= 1;
+    const prethodniMjesec = new Date(do_.getFullYear(), do_.getMonth(), 0);
+    dani += prethodniMjesec.getDate();
+  }
+  if (mjeseci < 0) {
+    godine -= 1;
+    mjeseci += 12;
+  }
+  return { godine: Math.max(0, godine), mjeseci: Math.max(0, mjeseci), dani: Math.max(0, dani) };
+}
+
 function renderPrethodniStaz() {
   const body = $('prethodniStazBody');
   const totalDiv = $('prethodniStazTotal');
@@ -5847,14 +5864,50 @@ function renderPrethodniStaz() {
     totalDiv.textContent = '';
     return;
   }
+  const emp = employees[goSelectedEmpIndex];
+
+  // Automatski red: staž kod OVE firme, računat od datuma stupanja na rad do danas.
+  const hireDate = emp ? parseDMY(emp.Datum_stupanja_na_rad) : null;
+  let danaKodFirme = 0;
+  const autoTable = document.createElement('table');
+  const autoThead = document.createElement('thead');
+  autoThead.innerHTML = '<tr><th>Godine</th><th>Mjeseci</th><th>Dani</th><th>Napomena</th><th></th></tr>';
+  autoTable.appendChild(autoThead);
+  const autoTbody = document.createElement('tbody');
+  const autoTr = document.createElement('tr');
+  autoTr.style.background = 'rgba(0,0,0,0.03)';
+  if (hireDate) {
+    const danas = new Date();
+    const razlika = razlikaGodMjesDan(hireDate, danas);
+    danaKodFirme = Math.floor((danas - hireDate) / 86400000);
+    [razlika.godine, razlika.mjeseci, razlika.dani, `Staž kod ove firme (od ${emp.Datum_stupanja_na_rad}) \u2013 računa se automatski`].forEach(v => {
+      const td = document.createElement('td');
+      td.textContent = v;
+      td.style.fontStyle = 'italic';
+      autoTr.appendChild(td);
+    });
+  } else {
+    const td = document.createElement('td');
+    td.colSpan = 4;
+    td.textContent = 'Nije unesen datum stupanja na rad - staž kod firme se ne može automatski izračunati.';
+    td.style.fontStyle = 'italic';
+    autoTr.appendChild(td);
+  }
+  const autoTdEmpty = document.createElement('td');
+  autoTr.appendChild(autoTdEmpty);
+  autoTbody.appendChild(autoTr);
+  autoTable.appendChild(autoTbody);
+  const autoWrap = document.createElement('div');
+  autoWrap.className = 'table-wrap';
+  autoWrap.style.marginBottom = '10px';
+  autoWrap.appendChild(autoTable);
+  body.appendChild(autoWrap);
 
   const items = prethodniStaz
     .map((p, pidx) => ({ p, pidx }))
     .filter(x => x.p.emp_idx === goSelectedEmpIndex);
 
-  if (!items.length) {
-    body.innerHTML = '<div class="empty" style="padding:14px;">Nije unesen prethodni staž.</div>';
-  } else {
+  if (items.length) {
     const table = document.createElement('table');
     const thead = document.createElement('thead');
     thead.innerHTML = '<tr><th>Godine</th><th>Mjeseci</th><th>Dani</th><th>Napomena</th><th></th></tr>';
@@ -5895,9 +5948,10 @@ function renderPrethodniStaz() {
     body.appendChild(wrapDiv);
   }
 
-  const totalDays = prethodniStazEmployeeDays(goSelectedEmpIndex);
+  const totalDaysPrethodno = prethodniStazEmployeeDays(goSelectedEmpIndex);
+  const totalDays = danaKodFirme + totalDaysPrethodno;
   const totalYears = Math.floor(totalDays / 365);
-  totalDiv.textContent = `Ukupno prethodnog staža: ${totalDays} dana (\u2248 ${totalYears} godina) \u2013 uračunava se u ukupan staž za uvećanje dana GO.`;
+  totalDiv.textContent = `Ukupan staž (kod ove firme + prethodni): ${totalDays} dana (\u2248 ${totalYears} godina) \u2013 na osnovu ovoga se računa uvećanje dana godišnjeg odmora.`;
 }
 
 $('addPrethodniStazBtn').addEventListener('click', async () => {
