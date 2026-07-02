@@ -2204,6 +2204,18 @@ async function loadData() {
     }
   } catch(e) { radniRaspored = []; }
 
+  // Prethodni radni staž (kod prethodnih poslodavaca)
+  try {
+    const rows = await sbGet('prethodni_staz');
+    prethodniStaz = (rows || []).map(r => ({
+      id: r.id, _db_id: r.id,
+      emp_db_id: r.emp_db_id,
+      emp_idx: employees.findIndex(e => e._db_id === r.emp_db_id),
+      godine: r.godine || 0, mjeseci: r.mjeseci || 0, dani: r.dani || 0,
+      napomena: r.napomena || '',
+    }));
+  } catch(e) { prethodniStaz = []; }
+
   // Odsustva i sihterica overrides ostaju localStorage (privremeni podaci)
   try {
     const res = localStorage.getItem('odsustva');
@@ -2410,8 +2422,31 @@ async function savePraznici() {
 }
 
 async function savePrethodniStaz() {
-  try { localStorage.setItem('prethodni_staz', JSON.stringify(prethodniStaz)); }
-  catch(e) { console.error(e); }
+  try {
+    for (const p of prethodniStaz) {
+      if (p.emp_idx == null || p.emp_idx < 0 || !employees[p.emp_idx]) continue;
+      const emp = employees[p.emp_idx];
+      const row = {
+        emp_db_id: emp._db_id,
+        godine: p.godine || 0, mjeseci: p.mjeseci || 0, dani: p.dani || 0,
+        napomena: p.napomena || '',
+      };
+      if (p._db_id) {
+        await _supabase.from('prethodni_staz').update(row).eq('id', p._db_id);
+      } else {
+        const { data } = await _supabase.from('prethodni_staz').insert(row).select();
+        if (data && data[0]) { p._db_id = data[0].id; p.emp_db_id = data[0].emp_db_id; }
+      }
+    }
+  } catch(e) { console.error(e); toast('Greška pri snimanju radnog staža.'); }
+}
+
+async function deletePrethodniStaz(p) {
+  try {
+    if (p._db_id) {
+      await _supabase.from('prethodni_staz').delete().eq('id', p._db_id);
+    }
+  } catch(e) { console.error('deletePrethodniStaz:', e && e.message); toast('Greška pri brisanju.'); }
 }
 
 async function saveRadniRaspored() {
@@ -5928,8 +5963,8 @@ function renderPrethodniStaz() {
         delBtn.textContent = 'Obriši';
         delBtn.addEventListener('click', async () => {
           if (!confirm('Obrisati ovu stavku prethodnog staža?')) return;
+          await deletePrethodniStaz(p);
           prethodniStaz.splice(pidx, 1);
-          await savePrethodniStaz();
           const empName = employees[goSelectedEmpIndex] ? employees[goSelectedEmpIndex].Ime_i_prezime : '';
           await logAction('Godišnji odmori', empName, 'Obrisana stavka prethodnog staža');
           renderPrethodniStaz();
@@ -5964,6 +5999,7 @@ $('addPrethodniStazBtn').addEventListener('click', async () => {
   prethodniStaz.push({
     id: nextId(prethodniStaz),
     emp_idx: goSelectedEmpIndex,
+    emp_db_id: employees[goSelectedEmpIndex] ? employees[goSelectedEmpIndex]._db_id : null,
     godine, mjeseci, dani,
     napomena: $('ps_napomena').value.trim(),
   });
