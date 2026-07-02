@@ -2197,6 +2197,7 @@ async function loadData() {
         smjena2: r.smjena2 || { od:'', do:'' },
         medju:   r.medju   || { od:'', do:'' },
         dani: r.dani || null,
+        rezim: r.rezim || 'fiksni',
         slobodnih_dana: r.slobodnih_dana ?? 2,
         izuzeci: r.izuzeci || [],
       }));
@@ -2466,7 +2467,7 @@ async function saveRadniRaspored() {
     for (const r of radniRaspored) {
       const row = { radno_mjesto: r.radno_mjesto, firma_id: r.firma_id || null,
         smjena1: r.smjena1, smjena2: r.smjena2, medju: r.medju,
-        dani: r.dani || null,
+        dani: r.dani || null, rezim: r.rezim || 'fiksni',
         slobodnih_dana: r.slobodnih_dana ?? 2, izuzeci: r.izuzeci || [] };
       if (r._db_id) {
         await _supabase.from('radni_raspored').update(row).eq('id', r._db_id);
@@ -4613,11 +4614,13 @@ function getOrCreateRaspored(radnoMjesto) {
       smjena2:        { od: '', do: '' },
       medju:          { od: '', do: '' },
       dani:           { pon:'1', uto:'1', sre:'1', cet:'1', pet:'1', sub:'slobodno', ned:'slobodno' },
+      rezim:          'fiksni',
       slobodnih_dana: 2,
     };
     radniRaspored.push(r);
   }
   if (r.slobodnih_dana === undefined) r.slobodnih_dana = 2;
+  if (!r.rezim) r.rezim = 'fiksni';
   if (!r.smjena1) r.smjena1 = { od: '', do: '' };
   if (!r.smjena2) r.smjena2 = { od: '', do: '' };
   if (!r.medju)   r.medju   = { od: '', do: '' };
@@ -4692,49 +4695,106 @@ function openRasporedModal(rmId) {
   smjeneSection.appendChild(smjeneGrid);
   body.appendChild(smjeneSection);
 
-  // ── 2. Raspored po danima u sedmici ────────────────────────
-  const daniSection = document.createElement('div');
-  daniSection.className = 'section';
-  daniSection.innerHTML = '<h3>Raspored po danima u sedmici</h3>' +
-    '<p style="font-size:12px;color:var(--muted);margin-bottom:12px;">Za svaki dan izaberi da li se radi i u kojoj smjeni. "Svaka druga sedmica" znači da se taj dan radi samo neparne (ISO) sedmice — npr. za pravilo "svaka druga subota".</p>';
-  const daniList = document.createElement('div');
-  daniList.style.cssText = 'display:flex;flex-direction:column;gap:8px;';
-
-  const DANI_OPCIJE = [
-    { v: 'slobodno', t: 'Slobodan dan' },
-    { v: '1', t: 'Radi \u2013 Smjena 1' },
-    { v: '2', t: 'Radi \u2013 Smjena 2' },
-    { v: 'svaka_druga1', t: 'Svaka druga sedmica \u2013 Smjena 1' },
-    { v: 'svaka_druga2', t: 'Svaka druga sedmica \u2013 Smjena 2' },
-  ];
-
-  DANI_KEYS.forEach(dk => {
-    const row = document.createElement('div');
-    row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:6px 10px;border:1px solid var(--line);border-radius:7px;';
-    const lbl = document.createElement('span');
-    lbl.style.cssText = 'font-weight:700;font-size:13px;min-width:110px;';
-    lbl.textContent = DANI_LABELS[dk];
-    const sel = document.createElement('select');
-    sel.style.flex = '1';
-    sel.disabled = !canEdit;
-    DANI_OPCIJE.forEach(o => {
-      const opt = document.createElement('option');
-      opt.value = o.v; opt.textContent = o.t;
-      sel.appendChild(opt);
-    });
-    sel.value = (r.dani && r.dani[dk]) || 'slobodno';
-    sel.addEventListener('change', async () => {
-      if (!r.dani) r.dani = {};
-      r.dani[dk] = sel.value;
-      await saveRadniRaspored();
-      toast('Sačuvano.');
-    });
-    row.appendChild(lbl); row.appendChild(sel);
-    daniList.appendChild(row);
+  // ── 2. Način rasporeda ──────────────────────────────────────
+  const rezimSection = document.createElement('div');
+  rezimSection.className = 'section';
+  rezimSection.innerHTML = '<h3>Način rasporeda</h3>' +
+    '<p style="font-size:12px;color:var(--muted);margin-bottom:12px;">"Fiksni" — svi na ovom radnom mjestu rade isti raspored po danima (dobro za pozicije gdje je jedna osoba, npr. Uprava). "Automatski miks" — za svakog zaposlenog na ovom radnom mjestu sistem sam (ali dosljedno, uvijek isto za istog zaposlenog/mjesec) raspoređuje radne/slobodne dane i smjene koristeći definisane smjene iznad — dobro za pozicije sa više zaposlenih koji rotiraju (npr. Konobar).</p>';
+  const rezimRow = document.createElement('div');
+  rezimRow.style.cssText = 'display:flex; gap:10px;';
+  const btnFiksni = document.createElement('button');
+  btnFiksni.type = 'button';
+  btnFiksni.textContent = 'Fiksni raspored po danima';
+  const btnMiks = document.createElement('button');
+  btnMiks.type = 'button';
+  btnMiks.textContent = 'Automatski miks';
+  [btnFiksni, btnMiks].forEach(b => { b.className = 'secondary small'; b.disabled = !canEdit; });
+  (r.rezim === 'miks' ? btnMiks : btnFiksni).className = 'primary small';
+  btnFiksni.addEventListener('click', async () => {
+    if (r.rezim === 'fiksni') return;
+    r.rezim = 'fiksni';
+    await saveRadniRaspored();
+    toast('Sačuvano.');
+    openRasporedModal(rmId);
   });
+  btnMiks.addEventListener('click', async () => {
+    if (r.rezim === 'miks') return;
+    r.rezim = 'miks';
+    await saveRadniRaspored();
+    toast('Sačuvano.');
+    openRasporedModal(rmId);
+  });
+  rezimRow.appendChild(btnFiksni); rezimRow.appendChild(btnMiks);
+  rezimSection.appendChild(rezimRow);
+  body.appendChild(rezimSection);
 
-  daniSection.appendChild(daniList);
-  body.appendChild(daniSection);
+  if (r.rezim === 'miks') {
+    // ── 3a. Automatski miks - broj slobodnih dana ──────────────
+    const miksSection = document.createElement('div');
+    miksSection.className = 'section';
+    miksSection.innerHTML = '<h3>Slobodni dani u sedmici</h3>';
+    const miksRow = document.createElement('div');
+    miksRow.style.cssText = 'display:flex;align-items:center;gap:12px;';
+    const slobodniInp = document.createElement('input');
+    slobodniInp.type = 'number'; slobodniInp.min = 0; slobodniInp.max = 6;
+    slobodniInp.value = r.slobodnih_dana !== undefined ? r.slobodnih_dana : 2;
+    slobodniInp.style.cssText = 'width:70px;text-align:center;font-size:20px;font-weight:700;border:2px solid var(--line);border-radius:8px;padding:6px;';
+    slobodniInp.disabled = !canEdit;
+    const slobodniLbl = document.createElement('span');
+    slobodniLbl.style.cssText = 'font-size:13px;color:var(--muted);';
+    slobodniLbl.textContent = 'slobodnih dana sedmično po zaposlenom (sistem bira koji dani, i miksa smjene iznad, drugačije za svakog zaposlenog)';
+    slobodniInp.addEventListener('change', async () => {
+      r.slobodnih_dana = Math.max(0, Math.min(6, parseInt(slobodniInp.value) || 0));
+      await saveRadniRaspored(); toast('Sačuvano.');
+    });
+    miksRow.appendChild(slobodniInp); miksRow.appendChild(slobodniLbl);
+    miksSection.appendChild(miksRow);
+    body.appendChild(miksSection);
+  } else {
+    // ── 3b. Fiksni raspored po danima u sedmici ────────────────
+    const daniSection = document.createElement('div');
+    daniSection.className = 'section';
+    daniSection.innerHTML = '<h3>Raspored po danima u sedmici</h3>' +
+      '<p style="font-size:12px;color:var(--muted);margin-bottom:12px;">Za svaki dan izaberi da li se radi i u kojoj smjeni. "Svaka druga sedmica" znači da se taj dan radi samo neparne (ISO) sedmice — npr. za pravilo "svaka druga subota".</p>';
+    const daniList = document.createElement('div');
+    daniList.style.cssText = 'display:flex;flex-direction:column;gap:8px;';
+
+    const DANI_OPCIJE = [
+      { v: 'slobodno', t: 'Slobodan dan' },
+      { v: '1', t: 'Radi \u2013 Smjena 1' },
+      { v: '2', t: 'Radi \u2013 Smjena 2' },
+      { v: 'svaka_druga1', t: 'Svaka druga sedmica \u2013 Smjena 1' },
+      { v: 'svaka_druga2', t: 'Svaka druga sedmica \u2013 Smjena 2' },
+    ];
+
+    DANI_KEYS.forEach(dk => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:6px 10px;border:1px solid var(--line);border-radius:7px;';
+      const lbl = document.createElement('span');
+      lbl.style.cssText = 'font-weight:700;font-size:13px;min-width:110px;';
+      lbl.textContent = DANI_LABELS[dk];
+      const sel = document.createElement('select');
+      sel.style.flex = '1';
+      sel.disabled = !canEdit;
+      DANI_OPCIJE.forEach(o => {
+        const opt = document.createElement('option');
+        opt.value = o.v; opt.textContent = o.t;
+        sel.appendChild(opt);
+      });
+      sel.value = (r.dani && r.dani[dk]) || 'slobodno';
+      sel.addEventListener('change', async () => {
+        if (!r.dani) r.dani = {};
+        r.dani[dk] = sel.value;
+        await saveRadniRaspored();
+        toast('Sačuvano.');
+      });
+      row.appendChild(lbl); row.appendChild(sel);
+      daniList.appendChild(row);
+    });
+
+    daniSection.appendChild(daniList);
+    body.appendChild(daniSection);
+  }
 
   $('rasporedOverlay').classList.add('open');
 }
@@ -5488,16 +5548,44 @@ function planDanaPoRasporedu(raspored, datum) {
   return { smjena: vrijednost, pocetak: smjenaDef.od, kraj: smjenaDef.do, sati: diffSati(smjenaDef.od, smjenaDef.do) };
 }
 
+// Jednostavan deterministički "seeded" generator pseudo-nasumičnih brojeva (mulberry32),
+// koristi se za "miks" režim da svaki zaposleni dobije dosljedan (uvijek isti za isti
+// mjesec), ali drugačiji od kolega, raspored.
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return function() {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function seedFromString(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) { h = (h << 5) - h + str.charCodeAt(i); h |= 0; }
+  return h >>> 0;
+}
+
 // Generiše osnovni (prije ručnih izmjena) raspored za cijeli mjesec za dato radno
 // mjesto, uklapajući fond na 40h/sedmično: ako je u toj sedmici subota radna,
 // proporcionalno skraćuje radne dane te sedmice (pon-pet) da zbir bude tačno 40h.
-function generisiRasporedMjeseca(radnoMjesto, godina, mjesec, firmaId) {
+// "empSeed" (npr. _db_id zaposlenog) se koristi samo za "miks" režim - da svaki
+// zaposleni na istom radnom mjestu dobije drugačiji (ali dosljedan) raspored.
+function generisiRasporedMjeseca(radnoMjesto, godina, mjesec, firmaId, empSeed) {
   const raspored = getRaspored(radnoMjesto);
+  const jeMiks = raspored && raspored.rezim === 'miks';
+  const rng = jeMiks ? mulberry32(seedFromString(`${empSeed || ''}-${radnoMjesto}-${godina}-${mjesec}`)) : null;
+  const aktivneSmjene = [];
+  if (raspored) {
+    if (jeSmjenaAktivna(raspored.smjena1)) aktivneSmjene.push({ v: '1', def: raspored.smjena1 });
+    if (jeSmjenaAktivna(raspored.smjena2)) aktivneSmjene.push({ v: '2', def: raspored.smjena2 });
+    if (jeSmjenaAktivna(raspored.medju))   aktivneSmjene.push({ v: 'medju', def: raspored.medju });
+  }
+
   const brDana = new Date(godina, mjesec, 0).getDate();
   const dani = [];
   for (let d = 1; d <= brDana; d++) {
     const datum = new Date(godina, mjesec - 1, d);
-    const plan = planDanaPoRasporedu(raspored, datum);
     const praznikDan = jePraznik(datum, firmaId);
     // Ako je dan praznik, tretira se kao neradan za potrebe rasporeda i uklapanja fonda
     // (sati 0), bez obzira što bi po rasporedu radnog mjesta inače bio radni dan -
@@ -5505,7 +5593,10 @@ function generisiRasporedMjeseca(radnoMjesto, godina, mjesec, firmaId) {
     // ovdje umanjuje jer se taj dan ne računa u 40h/sedmično.
     if (praznikDan) {
       dani.push({ dan: d, datum, smjena: null, pocetak: '', kraj: '', sati: 0, jePraznikDan: true });
+    } else if (jeMiks) {
+      dani.push({ dan: d, datum, smjena: null, pocetak: '', kraj: '', sati: 0, jePraznikDan: false });
     } else {
+      const plan = planDanaPoRasporedu(raspored, datum);
       dani.push({ dan: d, datum, ...plan });
     }
   }
@@ -5538,6 +5629,14 @@ function generisiRasporedMjeseca(radnoMjesto, godina, mjesec, firmaId) {
     });
   }
 
+  // Fisher-Yates promiješa niz IN-PLACE koristeći dati generator.
+  function promijesaj(niz, rngFn) {
+    for (let k = niz.length - 1; k > 0; k--) {
+      const j = Math.floor(rngFn() * (k + 1));
+      [niz[k], niz[j]] = [niz[j], niz[k]];
+    }
+  }
+
   // Grupiši po KALENDARSKIM sedmicama (ponedjeljak-nedjelja, koje mogu preći granicu
   // mjeseca). Sedmica koja je u potpunosti (svih 7 dana) unutar ovog mjeseca uklapa se
   // na tačno 40h. Sedmica koja je djelimično van mjeseca (početak/kraj mjeseca) se NE
@@ -5552,9 +5651,31 @@ function generisiRasporedMjeseca(radnoMjesto, godina, mjesec, firmaId) {
     const weekEndIdeal = startOfWeekIdx + 6;
     const weekEnd = Math.min(dani.length - 1, weekEndIdeal);
     const potpunaSedmica = startOfWeekIdx >= 0 && weekEndIdeal <= dani.length - 1;
+    const weekSlice = dani.slice(weekStart, weekEnd + 1);
 
-    const radniDaniSedmice = dani.slice(weekStart, weekEnd + 1)
-      .filter(x => x.smjena && !x.jePraznikDan);
+    if (jeMiks && aktivneSmjene.length) {
+      // Nasumično (ali dosljedno za ovog zaposlenog/mjesec) izaberi koji dani ove
+      // sedmice su slobodni, i kojim redoslijedom se smjene rotiraju.
+      const eligible = weekSlice.filter(x => !x.jePraznikDan);
+      const poredak = eligible.map((_, idx) => idx);
+      promijesaj(poredak, rng);
+      const brSlobodnih = Math.min(raspored.slobodnih_dana ?? 2, eligible.length);
+      const slobodniSet = new Set(poredak.slice(0, brSlobodnih));
+      const smjeneRedoslijed = aktivneSmjene.slice();
+      promijesaj(smjeneRedoslijed, rng);
+      let smjenaPtr = 0;
+      eligible.forEach((x, idx) => {
+        if (slobodniSet.has(idx)) {
+          x.smjena = null; x.pocetak = ''; x.kraj = ''; x.sati = 0;
+        } else {
+          const sm = smjeneRedoslijed[smjenaPtr % smjeneRedoslijed.length];
+          smjenaPtr++;
+          x.smjena = sm.v; x.pocetak = sm.def.od; x.kraj = sm.def.do; x.sati = diffSati(sm.def.od, sm.def.do);
+        }
+      });
+    }
+
+    const radniDaniSedmice = weekSlice.filter(x => x.smjena && !x.jePraznikDan);
 
     if (radniDaniSedmice.length) {
       const trenutnoUkupno = radniDaniSedmice.reduce((s, x) => s + x.sati, 0);
@@ -5609,7 +5730,7 @@ function generisiSihtericuZaZaposlenog(empIdx, godina, mjesec) {
   const emp = employees[empIdx];
   if (!emp) return [];
   const firmaId = firmaIdZaZaposlenog(emp);
-  const planMjeseca = generisiRasporedMjeseca(emp.Radno_mjesto, godina, mjesec, firmaId);
+  const planMjeseca = generisiRasporedMjeseca(emp.Radno_mjesto, godina, mjesec, firmaId, emp._db_id);
 
   return planMjeseca.map(dan => {
     const override = getOverride(empIdx, godina, mjesec, dan.dan);
