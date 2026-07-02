@@ -424,6 +424,14 @@
   }
   .overlay.navpage .modal-header { position: static; }
   .overlay.navpage .modal-body { overflow: visible; }
+
+  /* ── Štampa unutar iste stranice (bez window.open, bez popup blokera) ── */
+  #printArea { display: none; }
+  @media print {
+    body.printing-doc * { visibility: hidden; }
+    body.printing-doc #printArea, body.printing-doc #printArea * { visibility: visible; }
+    body.printing-doc #printArea { display: block; position: absolute; top: 0; left: 0; width: 100%; }
+  }
   .section {
     background: var(--field-bg); border: 1px solid var(--line); border-radius: 8px;
     padding: 14px 16px; margin-bottom: 14px;
@@ -2925,6 +2933,20 @@ function openEmployeeCard(index) {
   $('cardOverlay').classList.add('open');
 }
 
+// ---------- Štampa direktno unutar stranice (bez window.open, bez popup blokera) ----------
+function printInline(html) {
+  const area = document.getElementById('printArea');
+  if (!area) { toast('Greška: nema kontejnera za štampu.'); return; }
+  area.innerHTML = html;
+  document.body.classList.add('printing-doc');
+  window.print();
+}
+window.addEventListener('afterprint', () => {
+  document.body.classList.remove('printing-doc');
+  const area = document.getElementById('printArea');
+  if (area) area.innerHTML = '';
+});
+
 // ---------- Štampa "Ugovor o radu" kao pregled za štampu (bez download-a) ----------
 function printUgovorORadu(emp) {
   const missing = getMissingFields('ugovor_o_radu', emp);
@@ -2939,27 +2961,21 @@ function printUgovorORadu(emp) {
     return;
   }
   const d = computeDerived(emp);
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) { toast('Browser je blokirao otvaranje prozora za štampu.'); return; }
-  printWindow.document.write(`
-    <!DOCTYPE html>
-    <html><head><meta charset="UTF-8">
-    <title>Ugovor o radu - ${escapeXml(emp.Ime_i_prezime || '')}</title>
+  printInline(`
     <style>
-      body { font-family: 'Times New Roman', Times, serif; padding: 40px 55px; color: #111; font-size: 13px; line-height: 1.55; }
-      h1 { text-align: center; font-size: 15px; margin: 4px 0; }
-      .naslov-forme { text-align: right; font-size: 12px; margin-bottom: 18px; }
-      .naslov-glavni { text-align: center; font-weight: bold; font-size: 16px; margin: 22px 0 4px; }
-      .naslov-tip { text-align: center; font-weight: bold; font-size: 14px; margin: 0 0 4px; }
-      .broj-protokola { text-align: center; font-size: 12px; margin-bottom: 22px; }
-      p { margin: 0 0 12px; text-align: justify; }
-      .tacka { margin-bottom: 12px; text-align: justify; }
-      .potpisi { margin-top: 46px; display: flex; justify-content: space-between; font-size: 13px; }
-      .potpisi .kol { width: 45%; }
-      .linija { border-top: 1px solid #111; margin-top: 40px; padding-top: 4px; text-align: center; }
-      @media print { body { padding: 15mm 20mm; } }
+      #printArea { font-family: 'Times New Roman', Times, serif; padding: 40px 55px; color: #111; font-size: 13px; line-height: 1.55; }
+      #printArea h1 { text-align: center; font-size: 15px; margin: 4px 0; }
+      #printArea .naslov-forme { text-align: right; font-size: 12px; margin-bottom: 18px; }
+      #printArea .naslov-glavni { text-align: center; font-weight: bold; font-size: 16px; margin: 22px 0 4px; }
+      #printArea .naslov-tip { text-align: center; font-weight: bold; font-size: 14px; margin: 0 0 4px; }
+      #printArea .broj-protokola { text-align: center; font-size: 12px; margin-bottom: 22px; }
+      #printArea p { margin: 0 0 12px; text-align: justify; }
+      #printArea .tacka { margin-bottom: 12px; text-align: justify; }
+      #printArea .potpisi { margin-top: 46px; display: flex; justify-content: space-between; font-size: 13px; }
+      #printArea .potpisi .kol { width: 45%; }
+      #printArea .linija { border-top: 1px solid #111; margin-top: 40px; padding-top: 4px; text-align: center; }
+      @media print { #printArea { padding: 15mm 20mm; } }
     </style>
-    </head><body>
     <div class="naslov-forme">ОБРАЗАЦ 1.</div>
     <p>На основу члана 33. Закона о раду („Службени гласник Републике Српске“, бр. 1/16, 66/18, 91/21 – Одлука Уставног суда Републике Српске и 119/21) послодавац ${escapeXml(emp.Naziv_poslodavca)} (у даљем тексту: послодавац) и радник ${escapeXml(d.IME_PREZIME_VELIKO)} из ${escapeXml(emp.Mjesto_stanovanja)}, ${escapeXml(emp.Adresa)}, са завршеном школом/факултетом ${escapeXml(emp.Zavrsena_skola)}, и стручним/научним називом ${escapeXml(emp.Strucni_naziv)} (у даљем тексту: радник), закључују:</p>
     <div class="naslov-glavni">УГОВОР О РАДУ</div>
@@ -2991,14 +3007,7 @@ function printUgovorORadu(emp) {
         <div class="linija">${escapeXml(emp.Zastupnik_poslodavca)}</div>
       </div>
     </div>
-    </body></html>
   `);
-  printWindow.document.close();
-  printWindow.onload = () => {
-    printWindow.focus();
-    printWindow.print();
-  };
-  setTimeout(() => printWindow.focus(), 100);
   toast('Otvoren pregled za štampu: Ugovor o radu');
   logAction('Generisan dokument (štampa)', emp.Ime_i_prezime, 'Ugovor o radu');
 }
@@ -3020,25 +3029,19 @@ function printUgovorDopunski(emp) {
   const rokTrajanja = String(emp.Datum_prestanka_ugovora || '').trim()
     ? `Poslove iz tačke 2. ovog ugovora izvršilac posla će obavljati do ${escapeXml(emp.Datum_prestanka_ugovora)}. godine.`
     : `Poslove iz tačke 2. ovog ugovora izvršilac posla će obavljati na neodređeno vrijeme.`;
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) { toast('Browser je blokirao otvaranje prozora za štampu.'); return; }
-  printWindow.document.write(`
-    <!DOCTYPE html>
-    <html><head><meta charset="UTF-8">
-    <title>Ugovor o dopunskom radu - ${escapeXml(emp.Ime_i_prezime || '')}</title>
+  printInline(`
     <style>
-      body { font-family: 'Times New Roman', Times, serif; padding: 40px 55px; color: #111; font-size: 13px; line-height: 1.55; }
-      .zaglavlje { margin-bottom: 24px; }
-      .zaglavlje div { margin: 0; }
-      .naslov-glavni { text-align: center; font-weight: bold; font-size: 16px; margin: 10px 0 22px; }
-      p { margin: 0 0 12px; text-align: justify; }
-      .tacka { margin-bottom: 12px; text-align: justify; }
-      .potpisi { margin-top: 46px; display: flex; justify-content: space-between; font-size: 13px; }
-      .potpisi .kol { width: 45%; }
-      .linija { border-top: 1px solid #111; margin-top: 40px; padding-top: 4px; text-align: center; }
-      @media print { body { padding: 15mm 20mm; } }
+      #printArea { font-family: 'Times New Roman', Times, serif; padding: 40px 55px; color: #111; font-size: 13px; line-height: 1.55; }
+      #printArea .zaglavlje { margin-bottom: 24px; }
+      #printArea .zaglavlje div { margin: 0; }
+      #printArea .naslov-glavni { text-align: center; font-weight: bold; font-size: 16px; margin: 10px 0 22px; }
+      #printArea p { margin: 0 0 12px; text-align: justify; }
+      #printArea .tacka { margin-bottom: 12px; text-align: justify; }
+      #printArea .potpisi { margin-top: 46px; display: flex; justify-content: space-between; font-size: 13px; }
+      #printArea .potpisi .kol { width: 45%; }
+      #printArea .linija { border-top: 1px solid #111; margin-top: 40px; padding-top: 4px; text-align: center; }
+      @media print { #printArea { padding: 15mm 20mm; } }
     </style>
-    </head><body>
     <div class="zaglavlje">
       <div>${escapeXml(emp.Naziv_poslodavca)}</div>
       <div>${escapeXml(emp.Adresa_poslodavca)}</div>
@@ -3069,14 +3072,7 @@ function printUgovorDopunski(emp) {
         <div class="linija">${escapeXml(emp.Zastupnik_poslodavca)}</div>
       </div>
     </div>
-    </body></html>
   `);
-  printWindow.document.close();
-  printWindow.onload = () => {
-    printWindow.focus();
-    printWindow.print();
-  };
-  setTimeout(() => printWindow.focus(), 100);
   toast('Otvoren pregled za štampu: Ugovor o dopunskom radu');
   logAction('Generisan dokument (štampa)', emp.Ime_i_prezime, 'Ugovor o dopunskom radu');
 }
@@ -3095,24 +3091,18 @@ function printSporazumPrestanak(emp) {
     return;
   }
   const d = computeDerived(emp);
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) { toast('Browser je blokirao otvaranje prozora za štampu.'); return; }
-  printWindow.document.write(`
-    <!DOCTYPE html>
-    <html><head><meta charset="UTF-8">
-    <title>Sporazum o prestanku - ${escapeXml(emp.Ime_i_prezime || '')}</title>
+  printInline(`
     <style>
-      body { font-family: 'Times New Roman', Times, serif; padding: 40px 55px; color: #111; font-size: 13px; line-height: 1.55; }
-      .zaglavlje { margin-bottom: 24px; }
-      .zaglavlje div { margin: 0; }
-      .naslov-glavni { text-align: center; font-weight: bold; font-size: 16px; margin: 10px 0 22px; }
-      p { margin: 0 0 12px; text-align: justify; }
-      .potpisi { margin-top: 46px; display: flex; justify-content: space-between; font-size: 13px; }
-      .potpisi .kol { width: 45%; }
-      .linija { border-top: 1px solid #111; margin-top: 40px; padding-top: 4px; text-align: center; }
-      @media print { body { padding: 15mm 20mm; } }
+      #printArea { font-family: 'Times New Roman', Times, serif; padding: 40px 55px; color: #111; font-size: 13px; line-height: 1.55; }
+      #printArea .zaglavlje { margin-bottom: 24px; }
+      #printArea .zaglavlje div { margin: 0; }
+      #printArea .naslov-glavni { text-align: center; font-weight: bold; font-size: 16px; margin: 10px 0 22px; }
+      #printArea p { margin: 0 0 12px; text-align: justify; }
+      #printArea .potpisi { margin-top: 46px; display: flex; justify-content: space-between; font-size: 13px; }
+      #printArea .potpisi .kol { width: 45%; }
+      #printArea .linija { border-top: 1px solid #111; margin-top: 40px; padding-top: 4px; text-align: center; }
+      @media print { #printArea { padding: 15mm 20mm; } }
     </style>
-    </head><body>
     <div class="zaglavlje">
       <div>${escapeXml(emp.Naziv_poslodavca)}</div>
       <div>${escapeXml(emp.Adresa_poslodavca)}</div>
@@ -3133,14 +3123,7 @@ function printSporazumPrestanak(emp) {
         <div class="linija">${escapeXml(emp.Zastupnik_poslodavca)}</div>
       </div>
     </div>
-    </body></html>
   `);
-  printWindow.document.close();
-  printWindow.onload = () => {
-    printWindow.focus();
-    printWindow.print();
-  };
-  setTimeout(() => printWindow.focus(), 100);
   toast('Otvoren pregled za štampu: Sporazum o prestanku');
   logAction('Generisan dokument (štampa)', emp.Ime_i_prezime, 'Sporazum o prestanku');
 }
@@ -3158,27 +3141,21 @@ function printRjesenjeGo(emp) {
     return;
   }
   const d = computeDerived(emp);
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) { toast('Browser je blokirao otvaranje prozora za štampu.'); return; }
-  printWindow.document.write(`
-    <!DOCTYPE html>
-    <html><head><meta charset="UTF-8">
-    <title>Rješenje o godišnjem odmoru - ${escapeXml(emp.Ime_i_prezime || '')}</title>
+  printInline(`
     <style>
-      body { font-family: 'Times New Roman', Times, serif; padding: 40px 55px; color: #111; font-size: 13px; line-height: 1.55; }
-      .zaglavlje { margin-bottom: 24px; }
-      .zaglavlje div { margin: 0; }
-      .naslov-glavni { text-align: center; font-weight: bold; font-size: 16px; margin: 10px 0 22px; }
-      .rimski { text-align: center; font-weight: bold; margin: 18px 0 8px; }
-      p { margin: 0 0 12px; text-align: justify; }
-      .dostaviti { margin-top: 26px; }
-      .dostaviti div { margin: 0; }
-      .potpisi { margin-top: 46px; display: flex; justify-content: space-between; font-size: 13px; }
-      .potpisi .kol { width: 45%; }
-      .linija { border-top: 1px solid #111; margin-top: 40px; padding-top: 4px; text-align: center; }
-      @media print { body { padding: 15mm 20mm; } }
+      #printArea { font-family: 'Times New Roman', Times, serif; padding: 40px 55px; color: #111; font-size: 13px; line-height: 1.55; }
+      #printArea .zaglavlje { margin-bottom: 24px; }
+      #printArea .zaglavlje div { margin: 0; }
+      #printArea .naslov-glavni { text-align: center; font-weight: bold; font-size: 16px; margin: 10px 0 22px; }
+      #printArea .rimski { text-align: center; font-weight: bold; margin: 18px 0 8px; }
+      #printArea p { margin: 0 0 12px; text-align: justify; }
+      #printArea .dostaviti { margin-top: 26px; }
+      #printArea .dostaviti div { margin: 0; }
+      #printArea .potpisi { margin-top: 46px; display: flex; justify-content: space-between; font-size: 13px; }
+      #printArea .potpisi .kol { width: 45%; }
+      #printArea .linija { border-top: 1px solid #111; margin-top: 40px; padding-top: 4px; text-align: center; }
+      @media print { #printArea { padding: 15mm 20mm; } }
     </style>
-    </head><body>
     <div class="zaglavlje">
       <div>${escapeXml(emp.Naziv_poslodavca)}</div>
       <div>${escapeXml(emp.Adresa_poslodavca)}</div>
@@ -3210,14 +3187,7 @@ function printRjesenjeGo(emp) {
         <div class="linija">${escapeXml(emp.Ime_i_prezime)}</div>
       </div>
     </div>
-    </body></html>
   `);
-  printWindow.document.close();
-  printWindow.onload = () => {
-    printWindow.focus();
-    printWindow.print();
-  };
-  setTimeout(() => printWindow.focus(), 100);
   toast('Otvoren pregled za štampu: Rješenje o godišnjem odmoru');
   logAction('Generisan dokument (štampa)', emp.Ime_i_prezime, 'Rješenje o godišnjem odmoru');
 }
@@ -3255,31 +3225,18 @@ $('cardEditBtn').addEventListener('click', () => {
 $('cardPrintBtn').addEventListener('click', () => {
   if (cardViewIndex === null) return;
   const emp = employees[cardViewIndex];
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) { toast('Browser je blokirao otvaranje prozora za štampu.'); return; }
-  printWindow.document.write(`
-    <!DOCTYPE html>
-    <html><head><meta charset="UTF-8">
-    <title>Kartica zaposlenog - ${emp.Ime_i_prezime || ''}</title>
+  printInline(`
     <style>
-      body { font-family: Arial, sans-serif; padding: 30px; color: #16243D; }
-      h1 { font-size: 20px; border-bottom: 2px solid #1F3D7A; padding-bottom: 10px; }
-      h2 { font-size: 14px; color: #1F3D7A; margin-top: 20px; }
-      .row { display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #ddd; font-size:13px; }
-      .label { color:#5C6B82; font-weight:700; }
+      #printArea { font-family: Arial, sans-serif; padding: 30px; color: #16243D; }
+      #printArea h1 { font-size: 20px; border-bottom: 2px solid #1F3D7A; padding-bottom: 10px; }
+      #printArea h2 { font-size: 14px; color: #1F3D7A; margin-top: 20px; }
+      #printArea .row { display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #ddd; font-size:13px; }
+      #printArea .label { color:#5C6B82; font-weight:700; }
     </style>
-    </head><body>
     <h1>Kartica zaposlenog \u2013 ${emp.Ime_i_prezime || ''}</h1>
     ${$('cardBody').innerHTML.replace(/<div class="section">/g, '<div>').replace(/<h3>/g, '<h2>').replace(/<\/h3>/g, '</h2>').replace(/var\(--line\)/g, '#ddd').replace(/var\(--muted\)/g, '#5C6B82')}
     <p style="margin-top:30px; font-size:11px; color:#888;">Štampano: ${new Date().toLocaleDateString('sr-Latn')}</p>
-    </body></html>
   `);
-  printWindow.document.close();
-  printWindow.onload = () => {
-    printWindow.focus();
-    printWindow.print();
-  };
-  setTimeout(() => printWindow.focus(), 100);
 });
 
 function openModal(index) {
@@ -3372,20 +3329,16 @@ $('printSelectedBtn').addEventListener('click', () => {
       '<tr><td>Neto plata</td><td>' + (emp.Neto_plata || '') + ' KM</td></tr>' +
       '</table></div>';
   }).join('');
-  const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Kartice zaposlenih</title>' +
-    '<style>body{font-family:Arial,sans-serif;font-size:11px;margin:0;}' +
-    '.card{page-break-after:always;padding:20px;border:1px solid #ccc;margin-bottom:20px;}' +
-    '.card:last-child{page-break-after:auto;}' +
-    'h2{font-size:14px;color:#16243D;margin:0 0 12px;}' +
-    'table{width:100%;border-collapse:collapse;}' +
-    'td{padding:4px 8px;border-bottom:1px solid #eee;}' +
-    'td:first-child{font-weight:bold;width:40%;color:#555;}' +
-    '</style></head><body>' + rows + '</body></html>';
-  const w = window.open('', '_blank');
-  w.document.write(html);
-  w.document.close();
-  w.focus();
-  setTimeout(function() { w.print(); }, 500);
+  const html = '<style>' +
+    '#printArea{font-family:Arial,sans-serif;font-size:11px;}' +
+    '#printArea .card{page-break-after:always;padding:20px;border:1px solid #ccc;margin-bottom:20px;}' +
+    '#printArea .card:last-child{page-break-after:auto;}' +
+    '#printArea h2{font-size:14px;color:#16243D;margin:0 0 12px;}' +
+    '#printArea table{width:100%;border-collapse:collapse;}' +
+    '#printArea td{padding:4px 8px;border-bottom:1px solid #eee;}' +
+    '#printArea td:first-child{font-weight:bold;width:40%;color:#555;}' +
+    '</style>' + rows;
+  printInline(html);
 });$('cancelBtn').addEventListener('click', closeModal);
 $('overlay').addEventListener('click', (e) => { if (e.target.id === 'overlay') closeModal(); });
 $('f_Poslovnica').addEventListener('change', fillPoslodavac);
@@ -6170,22 +6123,14 @@ function sihtericaHtmlZaZaposlenog(empIdx, godina, mjesec) {
 }
 
 function stampajSihtericu(empIndexes, godina, mjesec) {
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) { toast('Browser je blokirao otvaranje prozora za štampu.'); return; }
   const sviHtml = empIndexes.map(idx => sihtericaHtmlZaZaposlenog(idx, godina, mjesec)).join('');
-  printWindow.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Šihterica</title>
+  printInline(`
     <style>
       @page { size: A4 landscape; margin: 10mm; }
-      body { margin: 0; }
-      table { table-layout: fixed; width: 100%; }
+      #printArea table { table-layout: fixed; width: 100%; }
     </style>
-    </head><body>${sviHtml}</body></html>`);
-  printWindow.document.close();
-  printWindow.onload = () => {
-    printWindow.focus();
-    printWindow.print();
-  };
-  setTimeout(() => printWindow.focus(), 100);
+    ${sviHtml}
+  `);
 }
 
 $('sihStampajJednogBtn').addEventListener('click', () => {
@@ -6852,5 +6797,6 @@ updateRoleUI();
 loadUsers();
 </script>
 </div><!-- /mainContent -->
+<div id="printArea"></div>
 </body>
 </html>
