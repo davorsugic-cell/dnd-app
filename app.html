@@ -2196,6 +2196,9 @@ async function loadData() {
         smjena1: r.smjena1 || { od:'', do:'' },
         smjena2: r.smjena2 || { od:'', do:'' },
         medju:   r.medju   || { od:'', do:'' },
+        smjena1_izuzeci: r.smjena1_izuzeci || {},
+        smjena2_izuzeci: r.smjena2_izuzeci || {},
+        medju_izuzeci:   r.medju_izuzeci   || {},
         dani: r.dani || null,
         rezim: r.rezim || 'fiksni',
         slobodnih_dana: r.slobodnih_dana ?? 2,
@@ -2467,6 +2470,7 @@ async function saveRadniRaspored() {
     for (const r of radniRaspored) {
       const row = { radno_mjesto: r.radno_mjesto, firma_id: r.firma_id || null,
         smjena1: r.smjena1, smjena2: r.smjena2, medju: r.medju,
+        smjena1_izuzeci: r.smjena1_izuzeci || {}, smjena2_izuzeci: r.smjena2_izuzeci || {}, medju_izuzeci: r.medju_izuzeci || {},
         dani: r.dani || null, rezim: r.rezim || 'fiksni',
         slobodnih_dana: r.slobodnih_dana ?? 2, izuzeci: r.izuzeci || [] };
       if (r._db_id) {
@@ -4613,6 +4617,7 @@ function getOrCreateRaspored(radnoMjesto) {
       smjena1:        { od: '', do: '' },
       smjena2:        { od: '', do: '' },
       medju:          { od: '', do: '' },
+      smjena1_izuzeci: {}, smjena2_izuzeci: {}, medju_izuzeci: {},
       dani:           { pon:'1', uto:'1', sre:'1', cet:'1', pet:'1', sub:'slobodno', ned:'slobodno' },
       rezim:          'fiksni',
       slobodnih_dana: 2,
@@ -4624,6 +4629,9 @@ function getOrCreateRaspored(radnoMjesto) {
   if (!r.smjena1) r.smjena1 = { od: '', do: '' };
   if (!r.smjena2) r.smjena2 = { od: '', do: '' };
   if (!r.medju)   r.medju   = { od: '', do: '' };
+  if (!r.smjena1_izuzeci) r.smjena1_izuzeci = {};
+  if (!r.smjena2_izuzeci) r.smjena2_izuzeci = {};
+  if (!r.medju_izuzeci)   r.medju_izuzeci   = {};
   if (!r.dani)    r.dani    = { pon:'1', uto:'1', sre:'1', cet:'1', pet:'1', sub:'slobodno', ned:'slobodno' };
   return r;
 }
@@ -4636,6 +4644,18 @@ function jeSmjenaAktivna(smjena) {
   if (!od && !do_) return false;
   if (od === '00:00' && do_ === '00:00') return false;
   return true;
+}
+
+// Vraća vrijeme za datu smjenu ('1'/'2'/'medju') na dati dan (danKey npr. 'pet') -
+// ako postoji izuzetak za taj dan (npr. Smjena 2 petkom traje do 01:00 umjesto
+// uobičajenog), koristi njega, inače koristi osnovno vrijeme smjene.
+function vrijemeZaSmjenuIDan(raspored, smjenaKey, danKey) {
+  const polje = smjenaKey === '1' ? 'smjena1' : smjenaKey === '2' ? 'smjena2' : 'medju';
+  const izuzeciPolje = polje + '_izuzeci';
+  if (raspored[izuzeciPolje] && raspored[izuzeciPolje][danKey] && jeSmjenaAktivna(raspored[izuzeciPolje][danKey])) {
+    return raspored[izuzeciPolje][danKey];
+  }
+  return raspored[polje];
 }
 
 
@@ -4690,7 +4710,72 @@ function openRasporedModal(rmId) {
     };
     odInp.addEventListener('change', save); doInp.addEventListener('change', save);
     row.appendChild(odInp); row.appendChild(sep); row.appendChild(doInp);
-    wrap.appendChild(row); smjeneGrid.appendChild(wrap);
+    wrap.appendChild(row);
+
+    if (r.rezim === 'miks') {
+      const izuzeciPolje = key + '_izuzeci';
+      if (!r[izuzeciPolje]) r[izuzeciPolje] = {};
+      const izWrap = document.createElement('div');
+      izWrap.style.cssText = 'margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);';
+      const izTitle = document.createElement('div');
+      izTitle.style.cssText = 'font-size:10.5px;font-weight:700;color:var(--muted);margin-bottom:5px;';
+      izTitle.textContent = 'Izuzeci po danu (npr. petak/subota drugačije vrijeme)';
+      izWrap.appendChild(izTitle);
+
+      const izList = document.createElement('div');
+      izList.style.cssText = 'display:flex;flex-direction:column;gap:4px;margin-bottom:6px;';
+      Object.keys(r[izuzeciPolje]).forEach(dk => {
+        const iz = r[izuzeciPolje][dk];
+        const izRow = document.createElement('div');
+        izRow.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:11.5px;background:#fff;border:1px solid var(--line);border-radius:5px;padding:3px 6px;';
+        const izLbl = document.createElement('span');
+        izLbl.style.cssText = 'font-weight:700;min-width:70px;';
+        izLbl.textContent = DANI_LABELS[dk] || dk;
+        const izTime = document.createElement('span');
+        izTime.style.color = 'var(--muted)';
+        izTime.textContent = `${iz.od || '?'}\u2013${iz.do || '?'}`;
+        const izDel = document.createElement('button');
+        izDel.type = 'button'; izDel.className = 'ghost small';
+        izDel.style.cssText = 'margin-left:auto;padding:2px 6px;font-size:10px;';
+        izDel.textContent = 'Ukloni';
+        izDel.disabled = !canEdit;
+        izDel.addEventListener('click', async () => {
+          delete r[izuzeciPolje][dk];
+          await saveRadniRaspored();
+          openRasporedModal(rmId);
+        });
+        izRow.appendChild(izLbl); izRow.appendChild(izTime);
+        if (canEdit) izRow.appendChild(izDel);
+        izList.appendChild(izRow);
+      });
+      izWrap.appendChild(izList);
+
+      if (canEdit) {
+        const izAddRow = document.createElement('div');
+        izAddRow.style.cssText = 'display:flex;gap:4px;align-items:center;flex-wrap:wrap;';
+        const izDanSel = document.createElement('select');
+        izDanSel.style.cssText = 'font-size:11px;flex:1;min-width:80px;';
+        DANI_KEYS.forEach(dk => { const o = document.createElement('option'); o.value = dk; o.textContent = DANI_LABELS[dk]; izDanSel.appendChild(o); });
+        const izOdInp = document.createElement('input'); izOdInp.type = 'time'; izOdInp.style.cssText = 'font-size:11px;width:85px;';
+        const izDoInp = document.createElement('input'); izDoInp.type = 'time'; izDoInp.style.cssText = 'font-size:11px;width:85px;';
+        const izAddBtn = document.createElement('button');
+        izAddBtn.type = 'button'; izAddBtn.className = 'secondary small';
+        izAddBtn.style.cssText = 'padding:3px 8px;font-size:11px;';
+        izAddBtn.textContent = '+ Dodaj';
+        izAddBtn.addEventListener('click', async () => {
+          if (!izOdInp.value || !izDoInp.value) { toast('Unesi od i do vrijeme.'); return; }
+          r[izuzeciPolje][izDanSel.value] = { od: izOdInp.value, do: izDoInp.value };
+          await saveRadniRaspored();
+          openRasporedModal(rmId);
+        });
+        izAddRow.appendChild(izDanSel); izAddRow.appendChild(izOdInp); izAddRow.appendChild(izDoInp); izAddRow.appendChild(izAddBtn);
+        izWrap.appendChild(izAddRow);
+      }
+
+      wrap.appendChild(izWrap);
+    }
+
+    smjeneGrid.appendChild(wrap);
   });
   smjeneSection.appendChild(smjeneGrid);
   body.appendChild(smjeneSection);
@@ -5670,7 +5755,9 @@ function generisiRasporedMjeseca(radnoMjesto, godina, mjesec, firmaId, empSeed) 
         } else {
           const sm = smjeneRedoslijed[smjenaPtr % smjeneRedoslijed.length];
           smjenaPtr++;
-          x.smjena = sm.v; x.pocetak = sm.def.od; x.kraj = sm.def.do; x.sati = diffSati(sm.def.od, sm.def.do);
+          const danKeyX = DAN_INDEX_TO_KEY[x.datum.getDay()];
+          const vrijeme = vrijemeZaSmjenuIDan(raspored, sm.v, danKeyX) || sm.def;
+          x.smjena = sm.v; x.pocetak = vrijeme.od; x.kraj = vrijeme.do; x.sati = diffSati(vrijeme.od, vrijeme.do);
         }
       });
     }
