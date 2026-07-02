@@ -1225,6 +1225,23 @@
       od-do automatski računa radne dane (izuzimajući subote, nedjelje i praznike iz šifarnika).
     </p>
 
+    <div class="toolbar" style="margin:8px 0; gap:8px;">
+      <button type="button" class="primary small" id="goViewPregledBtn">📊 Pregled svih</button>
+      <button type="button" class="secondary small" id="goViewDetaljiBtn">👤 Pojedinačno</button>
+    </div>
+
+    <div id="goPregledWrap">
+      <div class="toolbar" style="margin:8px 0; flex-wrap:wrap;">
+        <input type="search" id="goPregledSearch" placeholder="Pretraga po imenu..." style="flex:1; min-width:180px;">
+        <select id="goPregledPoslovnicaFilter" style="min-width:160px;">
+          <option value="">Sve poslovnice</option>
+        </select>
+        <select id="goPregledGodina" style="min-width:110px;"></select>
+      </div>
+      <div class="table-wrap" id="goPregledTableWrap" style="max-height:65vh;"></div>
+    </div>
+
+    <div id="goDetaljiWrap" style="display:none;">
     <div class="toolbar" style="margin:8px 0;">
       <select id="goEmployeeSelect" style="flex:1; min-width:220px;"></select>
     </div>
@@ -1294,6 +1311,7 @@
       </table>
       <div class="empty" id="goKoristenjaEmpty" style="display:none;">Nema unesenih korištenja godišnjeg odmora za ovog zaposlenog.</div>
     </div>
+    </div><!-- /goDetaljiWrap -->
 
 
 
@@ -2145,7 +2163,15 @@ async function loadData() {
   // GO koristenja
   try {
     const rows = await sbGet('go_koristenja');
-    goKoristenja = rows || [];
+    goKoristenja = (rows || []).map(r => ({
+      id: r.id, _db_id: r.id,
+      emp_db_id: r.emp_db_id,
+      emp_idx: employees.findIndex(e => e._db_id === r.emp_db_id),
+      godina: r.godina,
+      datum_od: r.datum_od || '', datum_do: r.datum_do || '',
+      broj_dana: r.broj_dana, napomena: r.napomena || '',
+      firma_id: r.firma_id || null,
+    }));
   } catch(e) { goKoristenja = []; }
 
   // GO settings
@@ -2331,15 +2357,33 @@ async function saveKomitenti() {
 async function saveGoKoristenja() {
   try {
     for (const g of goKoristenja) {
-      const row = { firma_id: g.firma_id || null, emp_index: g.emp_index, godina: g.godina, koristenja: g.koristenja };
+      if (g.emp_idx == null || g.emp_idx < 0 || !employees[g.emp_idx]) continue;
+      const emp = employees[g.emp_idx];
+      const row = {
+        emp_db_id: emp._db_id,
+        firma_id: firmaIdZaZaposlenog(emp) || null,
+        godina: g.godina,
+        datum_od: g.datum_od || '',
+        datum_do: g.datum_do || '',
+        broj_dana: g.broj_dana,
+        napomena: g.napomena || '',
+      };
       if (g._db_id) {
         await _supabase.from('go_koristenja').update(row).eq('id', g._db_id);
       } else {
         const { data } = await _supabase.from('go_koristenja').insert(row).select();
-        if (data && data[0]) g._db_id = data[0].id;
+        if (data && data[0]) { g._db_id = data[0].id; g.emp_db_id = data[0].emp_db_id; }
       }
     }
   } catch(e) { console.error(e); toast('Greška pri snimanju GO korištenja.'); }
+}
+
+async function deleteGoKoristenje(k) {
+  try {
+    if (k._db_id) {
+      await _supabase.from('go_koristenja').delete().eq('id', k._db_id);
+    }
+  } catch(e) { console.error('deleteGoKoristenje:', e && e.message); toast('Greška pri brisanju GO korištenja.'); }
 }
 
 async function saveGoSettings() {
@@ -5233,8 +5277,8 @@ function renderGoKoristenjaList() {
       delBtn.textContent = 'Obriši';
       delBtn.addEventListener('click', async () => {
         if (!confirm('Obrisati ovo korištenje godišnjeg odmora?')) return;
+        await deleteGoKoristenje(k);
         goKoristenja.splice(kidx, 1);
-        await saveGoKoristenja();
         const empName = employees[goSelectedEmpIndex] ? employees[goSelectedEmpIndex].Ime_i_prezime : '';
         await logAction('Godišnji odmori', empName, `Obrisano korištenje GO (${k.godina}, ${k.broj_dana} dana)`);
         renderGoKoristenjaList();
@@ -5258,13 +5302,110 @@ function renderGoSettingsTexts() {
   $('goSet_prag').value = s.godinaPrag;
 }
 
+let goPregledView = 'pregled';
+
+function switchGoView(view) {
+  goPregledView = view;
+  $('goPregledWrap').style.display = view === 'pregled' ? '' : 'none';
+  $('goDetaljiWrap').style.display = view === 'detalji' ? '' : 'none';
+  $('goViewPregledBtn').className = view === 'pregled' ? 'primary small' : 'secondary small';
+  $('goViewDetaljiBtn').className = view === 'detalji' ? 'primary small' : 'secondary small';
+  if (view === 'pregled') renderGoPregled();
+}
+
+function populateGoPregledFilters() {
+  const allowed = accessiblePoslovnicaNazivi();
+  const poslovniceSet = new Set(employees.filter(e => allowed === null || allowed.includes(e.Poslovnica)).map(e => e.Poslovnica).filter(Boolean));
+  const sel = $('goPregledPoslovnicaFilter');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Sve poslovnice</option>' + [...poslovniceSet].map(p => `<option value="${escapeXml(p)}">${escapeXml(p)}</option>`).join('');
+  sel.value = cur;
+
+  const godSel = $('goPregledGodina');
+  if (!godSel.dataset.populated) {
+    const trenutna = new Date().getFullYear();
+    const opcije = [];
+    for (let g = trenutna + 1; g >= trenutna - 5; g--) opcije.push(g);
+    godSel.innerHTML = opcije.map(g => `<option value="${g}">${g}</option>`).join('');
+    godSel.value = String(trenutna);
+    godSel.dataset.populated = '1';
+  }
+}
+
+function renderGoPregled() {
+  const wrap = $('goPregledTableWrap');
+  const godina = parseInt($('goPregledGodina').value, 10) || new Date().getFullYear();
+  const search = ($('goPregledSearch').value || '').toLowerCase().trim();
+  const fPoslovnica = $('goPregledPoslovnicaFilter').value;
+
+  const list = accessibleEmployeesList()
+    .filter(x => !fPoslovnica || x.emp.Poslovnica === fPoslovnica)
+    .filter(x => !search || (x.emp.Ime_i_prezime || '').toLowerCase().includes(search))
+    .sort((a, b) => (a.emp.Ime_i_prezime || '').localeCompare(b.emp.Ime_i_prezime || '', 'bs'));
+
+  if (!list.length) {
+    wrap.innerHTML = '<div class="empty">Nema zaposlenih za izabrani filter.</div>';
+    return;
+  }
+
+  const table = document.createElement('table');
+  const thead = document.createElement('thead');
+  thead.innerHTML = '<tr><th>Ime i prezime</th><th>Poslovnica</th><th>Radno mjesto</th><th>Pravo (dana)</th><th>Iskorišteno</th><th>Preostalo</th><th></th></tr>';
+  table.appendChild(thead);
+  const tbody = document.createElement('tbody');
+
+  list.forEach(({ emp, idx }) => {
+    const pravo = pravoDanaGO(idx, emp, godina);
+    const iskoristeno = goKoristenja
+      .filter(k => k.emp_idx === idx && k.godina === godina)
+      .reduce((s, k) => s + (parseFloat(k.broj_dana) || 0), 0);
+    const preostalo = pravo - iskoristeno;
+
+    const tr = document.createElement('tr');
+    const tdIme = document.createElement('td'); tdIme.textContent = emp.Ime_i_prezime || ''; tr.appendChild(tdIme);
+    const tdPosl = document.createElement('td'); tdPosl.textContent = emp.Poslovnica || ''; tr.appendChild(tdPosl);
+    const tdRm = document.createElement('td'); tdRm.textContent = emp.Radno_mjesto || ''; tr.appendChild(tdRm);
+    const tdPravo = document.createElement('td'); tdPravo.textContent = pravo; tr.appendChild(tdPravo);
+    const tdIsk = document.createElement('td'); tdIsk.textContent = iskoristeno; tr.appendChild(tdIsk);
+    const tdPreo = document.createElement('td');
+    tdPreo.textContent = preostalo;
+    tdPreo.style.fontWeight = '700';
+    if (preostalo < 0) tdPreo.style.color = '#c0392b';
+    tr.appendChild(tdPreo);
+    const tdBtn = document.createElement('td');
+    const detBtn = document.createElement('button');
+    detBtn.type = 'button';
+    detBtn.className = 'ghost small';
+    detBtn.textContent = 'Detalji';
+    detBtn.addEventListener('click', () => {
+      goSelectedEmpIndex = idx;
+      switchGoView('detalji');
+      populateGoEmployeeSelect();
+      $('goEmployeeSelect').value = String(idx);
+      renderGoSummary();
+      renderGoKoristenjaList();
+      renderPrethodniStaz();
+      renderOdsustva();
+    });
+    tdBtn.appendChild(detBtn);
+    tr.appendChild(tdBtn);
+    tbody.appendChild(tr);
+  });
+
+  table.appendChild(tbody);
+  wrap.innerHTML = '';
+  wrap.appendChild(table);
+}
+
 function renderGoModal() {
   populateGoEmployeeSelect();
+  populateGoPregledFilters();
   renderGoSettingsTexts();
   renderGoSummary();
   renderGoKoristenjaList();
   renderPrethodniStaz();
   renderOdsustva();
+  switchGoView(goPregledView);
   $('addGoKoristenjeBtn').style.display = canAdd('godisnji_odmori') ? '' : 'none';
   $('go_stampaj_rjesenje').closest('label').style.display = canAdd('godisnji_odmori') ? '' : 'none';
   $('addPrethodniStazBtn').style.display = canAdd('godisnji_odmori') ? '' : 'none';
@@ -5274,8 +5415,16 @@ function renderGoModal() {
 function openGoModalForEmployee(index) {
   goSelectedEmpIndex = index;
   renderGoModal();
+  switchGoView('detalji');
+  $('goEmployeeSelect').value = String(index);
   $('goOverlay').classList.add('open');
 }
+
+$('goViewPregledBtn').addEventListener('click', () => switchGoView('pregled'));
+$('goViewDetaljiBtn').addEventListener('click', () => switchGoView('detalji'));
+$('goPregledSearch').addEventListener('input', renderGoPregled);
+$('goPregledPoslovnicaFilter').addEventListener('change', renderGoPregled);
+$('goPregledGodina').addEventListener('change', renderGoPregled);
 
 $('godisnjiOdmoriBtn').addEventListener('click', () => {
   renderGoModal();
@@ -5617,6 +5766,7 @@ $('addGoKoristenjeBtn').addEventListener('click', async () => {
   goKoristenja.push({
     id: nextId(goKoristenja),
     emp_idx: goSelectedEmpIndex,
+    emp_db_id: emp._db_id,
     godina,
     datum_od: $('go_datum_od').value,
     datum_do: $('go_datum_do').value,
