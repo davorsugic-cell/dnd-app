@@ -1829,7 +1829,7 @@ const RADNI_RASPORED_SEED = [];
 // ---------- Vrste odsustva i posebnih statusa dana (za šihtericu) ----------
 const VRSTE_ODSUSTVA = [
   'bolovanje', 'placeno', 'neplaceno', 'porodiljsko', 'bez_krivice', 'drugi_osnov',
-  'nocni_rad', 'prekovremeni', 'terenski', 'dezurstvo', 'pripravnost'
+  'nocni_rad', 'prekovremeni', 'terenski', 'dezurstvo', 'pripravnost', 'praznik_rad'
 ];
 const VRSTE_ODSUSTVA_LABELS = {
   bolovanje: 'Bolovanje (privremena nesposobnost)',
@@ -1843,6 +1843,7 @@ const VRSTE_ODSUSTVA_LABELS = {
   terenski: 'Terenski rad',
   dezurstvo: 'Dežurstvo',
   pripravnost: 'Pripravnost',
+  praznik_rad: 'Rad na dan praznika',
 };
 const ODSUSTVA_SEED = [];
 
@@ -5564,19 +5565,29 @@ $('goEmployeeSelect').addEventListener('change', () => {
 
 // Auto-izračunaj broj dana kad se postave oba datuma (radni dani, ponedjeljak-subota
 // u skladu sa šestodnevnom radnom sedmicom korištenom u ugovorima; nedjelje se ne računaju).
-function jePraznik(d, firmaId) {
+// Nalazi praznik za dati datum/firmu (ili null ako nema).
+function nadjiPraznik(d, firmaId) {
   const dd = String(d.getDate()).padStart(2, '0');
   const mm = String(d.getMonth() + 1).padStart(2, '0');
   const ddmm = `${dd}.${mm}`;
   const god = d.getFullYear();
-  return praznici.some(p => {
+  return praznici.find(p => {
     if (firmaId != null && p.firma_id !== firmaId) return false;
     if (p.datum !== ddmm) return false;
-    // Fiksni (nema godine) vrijedi svake godine
-    // Pomični vrijedi samo za tu godinu
     if (!p.godina) return true;
     return p.godina === god;
-  });
+  }) || null;
+}
+// Da li je datum NERADNI praznik (dan se ne radi) - ne uključuje praznike označene kao "Radan".
+function jePraznik(d, firmaId) {
+  const p = nadjiPraznik(d, firmaId);
+  return !!p && !p.radan;
+}
+// Da li je datum praznik OZNAČEN KAO RADAN - radi se normalno po rasporedu, ali se sati
+// bilježe u kolonu "Rad na dan praznika" umjesto "Redovno radno vrijeme".
+function jeRadniPraznik(d, firmaId) {
+  const p = nadjiPraznik(d, firmaId);
+  return !!p && !!p.radan;
 }
 
 // Vraća firma_id za zaposlenog (preko njegove poslovnice, ili direktno ako firma
@@ -5677,17 +5688,19 @@ function generisiRasporedMjeseca(radnoMjesto, godina, mjesec, firmaId, empSeed) 
   for (let d = 1; d <= brDana; d++) {
     const datum = new Date(godina, mjesec - 1, d);
     const praznikDan = jePraznik(datum, firmaId);
-    // Ako je dan praznik, tretira se kao neradan za potrebe rasporeda i uklapanja fonda
-    // (sati 0), bez obzira što bi po rasporedu radnog mjesta inače bio radni dan -
-    // stvarni status (praznik vs. praznik_rad) određuje se kasnije, ali fond se već
-    // ovdje umanjuje jer se taj dan ne računa u 40h/sedmično.
+    const radniPraznikDan = jeRadniPraznik(datum, firmaId);
+    // Ako je dan NERADNI praznik, tretira se kao neradan za potrebe rasporeda i uklapanja
+    // fonda (sati 0), bez obzira što bi po rasporedu radnog mjesta inače bio radni dan.
+    // Ako je praznik označen kao "Radan", tretira se kao običan dan (raspored se generiše
+    // normalno) - jeRadniPraznikDan oznaka se koristi kasnije da se sati upišu u kolonu
+    // "Rad na dan praznika" umjesto "Redovno radno vrijeme".
     if (praznikDan) {
-      dani.push({ dan: d, datum, smjena: null, pocetak: '', kraj: '', sati: 0, jePraznikDan: true });
+      dani.push({ dan: d, datum, smjena: null, pocetak: '', kraj: '', sati: 0, jePraznikDan: true, jeRadniPraznikDan: false });
     } else if (jeMiks) {
-      dani.push({ dan: d, datum, smjena: null, pocetak: '', kraj: '', sati: 0, jePraznikDan: false });
+      dani.push({ dan: d, datum, smjena: null, pocetak: '', kraj: '', sati: 0, jePraznikDan: false, jeRadniPraznikDan: radniPraznikDan });
     } else {
       const plan = planDanaPoRasporedu(raspored, datum);
-      dani.push({ dan: d, datum, ...plan });
+      dani.push({ dan: d, datum, ...plan, jePraznikDan: false, jeRadniPraznikDan: radniPraznikDan });
     }
   }
   if (!raspored) return dani;
@@ -5845,6 +5858,7 @@ function generisiSihtericuZaZaposlenog(empIdx, godina, mjesec) {
   return planMjeseca.map(dan => {
     const override = getOverride(empIdx, godina, mjesec, dan.dan);
     const isPraznik = !!dan.jePraznikDan;
+    const isRadniPraznik = !!dan.jeRadniPraznikDan;
     const isGO = jeDanGO(empIdx, dan.datum);
     const odsustvoTip = odsustvoZaDan(empIdx, dan.datum);
 
@@ -5857,22 +5871,31 @@ function generisiSihtericuZaZaposlenog(empIdx, godina, mjesec) {
       tip: dan.smjena ? 'rad' : 'slobodno',
     };
 
-    // Prioritet (kad nema ručne izmjene): praznik > odsustvo/bolovanje > GO > redovan raspored.
-    // Praznik, odsustvo i GO se uvijek prikazuju kao neradni (0 sati), bez obzira na to što je
-    // raspored radnog mjesta inače predviđao rad tog dana - administrator može ručno upisati
-    // "rad na dan praznika" kroz override ako je zaposleni stvarno radio. Ako je dan po
-    // rasporedu inače slobodan (npr. neradna subota) i ujedno praznik, prikazuje se samo
-    // kao "Praznik" (jer ionako ne bi bio radni dan).
+    // Prioritet (kad nema ručne izmjene): praznik > odsustvo/bolovanje > GO > radni praznik > redovan raspored.
+    // Praznik (neradni), odsustvo i GO se uvijek prikazuju kao neradni (0 sati), bez obzira na to
+    // što je raspored radnog mjesta inače predviđao rad tog dana. Odsustva koja su zapravo VRSTE
+    // RADA (rad noću, prekovremeni, terenski, dežurstvo, pripravnost, rad na dan praznika) i dalje
+    // koriste stvarno planirane sate/vrijeme tog dana - to nisu "odsustva" u smislu neprisustva.
     if (isPraznik) { status.tip = 'praznik'; status.redovnoSati = 0; status.pocetak = ''; status.kraj = ''; }
-    else if (odsustvoTip) { status.tip = odsustvoTip; status.redovnoSati = 0; status.pocetak = ''; status.kraj = ''; }
+    else if (odsustvoTip) {
+      status.tip = odsustvoTip;
+      if (SIHTERICA_RADNI_TIPOVI.includes(odsustvoTip)) {
+        status.redovnoSati = dan.sati || 0;
+        status.pocetak = dan.pocetak || '';
+        status.kraj = dan.kraj || '';
+      } else {
+        status.redovnoSati = 0; status.pocetak = ''; status.kraj = '';
+      }
+    }
     else if (isGO) { status.tip = 'go'; status.redovnoSati = 0; status.pocetak = ''; status.kraj = ''; }
+    else if (isRadniPraznik && status.tip === 'rad') { status.tip = 'praznik_rad'; }
 
     if (override) {
       if (override.tip === 'sati') {
         status.pocetak = override.pocetak || '';
         status.kraj = override.kraj || '';
         status.redovnoSati = override.sati != null ? override.sati : diffSati(override.pocetak, override.kraj);
-        status.tip = isPraznik ? 'praznik_rad' : 'rad';
+        status.tip = (isPraznik || isRadniPraznik) ? 'praznik_rad' : 'rad';
       } else if (override.tip === 'sifra') {
         status.tip = override.vrijednost;
         if (SIHTERICA_RADNI_TIPOVI.includes(override.vrijednost)) {
@@ -5905,7 +5928,7 @@ const SIHTERICA_TIP_KRATKO = {
 };
 // Tipovi koji se računaju kao "sati provedeni na radu" (koriste redovni raspored radnog
 // mjesta tog dana kao broj sati, umjesto da budu 0 kao odsustva).
-const SIHTERICA_RADNI_TIPOVI = ['nocni_rad', 'prekovremeni', 'terenski', 'dezurstvo', 'pripravnost'];
+const SIHTERICA_RADNI_TIPOVI = ['nocni_rad', 'prekovremeni', 'terenski', 'dezurstvo', 'pripravnost', 'praznik_rad'];
 
 // Vraća datum (dd.mm.gggg) prvog radnog dana poslije zadanog datuma (dd.mm.gggg),
 // izuzimajući subotu, nedjelju i praznike - koristi se kao "dan javljanja na posao".
