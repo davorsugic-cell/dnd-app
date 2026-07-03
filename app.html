@@ -3749,6 +3749,7 @@ function doLogout(reason) {
   if (inactivityTimer) { clearTimeout(inactivityTimer); inactivityTimer = null; }
   currentSessionUser = null;
   isAdmin = false;
+  try { localStorage.removeItem(SESSION_KEY); } catch(e) {}
   $('loggedUserName').textContent = '-';
   $('loginUsername').value = '';
   $('loginPassword').value = '';
@@ -3776,6 +3777,10 @@ function resetInactivityTimer() {
   if (!currentSessionUser) return;
   if (inactivityTimer) clearTimeout(inactivityTimer);
   inactivityTimer = setTimeout(() => doLogout('timeout'), INACTIVITY_LIMIT_MS);
+  try {
+    const saved = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
+    if (saved) { saved.ts = Date.now(); localStorage.setItem(SESSION_KEY, JSON.stringify(saved)); }
+  } catch(e) {}
 }
 
 ['mousemove','mousedown','keydown','scroll','touchstart','click'].forEach(evt => {
@@ -7014,6 +7019,12 @@ async function attemptLogin() {
   if (!u || !p) { document.getElementById('loginError').textContent = 'Unesi korisničko ime i šifru.'; return; }
   const user = users.find(x => x.username.toLowerCase() === u.toLowerCase() && x.password === p);
   if (!user) { document.getElementById('loginError').textContent = 'Pogrešno korisničko ime ili šifra.'; return; }
+  await ulogujKorisnika(user);
+}
+
+// Zajednička logika ulogovanja - koristi je i attemptLogin (ručna prijava) i
+// tryRestoreSession (automatsko "ostani prijavljen" nakon F5/refresh).
+async function ulogujKorisnika(user) {
   currentSessionUser = user;
   isAdmin = user.role === 'super_admin' || user.role === 'administrator';
   document.getElementById('loggedUserName').textContent = user.name || user.username;
@@ -7021,11 +7032,27 @@ async function attemptLogin() {
   document.getElementById('loginPassword').value = '';
   document.getElementById('loginOverlay').classList.remove('open');
   document.getElementById('appWrap').style.display = '';
+  try { localStorage.setItem(SESSION_KEY, JSON.stringify({ username: user.username, ts: Date.now() })); } catch(e) {}
   updateRoleUI();
   updateSidebar();
   initFirmaDropdown();
   resetInactivityTimer();
   await loadData();
+}
+
+// "Ostani prijavljen" - ako postoji nedavna sesija u localStorage (unutar SESSION_MAX_AGE_MS),
+// automatski uloguje korisnika bez ponovnog unosa šifre nakon F5/refresh stranice.
+const SESSION_KEY = 'dnd_session';
+const SESSION_MAX_AGE_MS = 12 * 60 * 60 * 1000; // 12h
+
+async function tryRestoreSession() {
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); } catch(e) { saved = null; }
+  if (!saved || !saved.username || !saved.ts) return;
+  if (Date.now() - saved.ts > SESSION_MAX_AGE_MS) { try { localStorage.removeItem(SESSION_KEY); } catch(e) {} return; }
+  const user = users.find(x => x.username.toLowerCase() === saved.username.toLowerCase());
+  if (!user) { try { localStorage.removeItem(SESSION_KEY); } catch(e) {} return; }
+  await ulogujKorisnika(user);
 }
 
 // Sidebar se sakriva kroz updateSidebar() koji se poziva iz doLogout ispod
@@ -7229,7 +7256,7 @@ function updateModuleSwitcher() {
 }
 
 updateRoleUI();
-loadUsers();
+loadUsers().then(() => tryRestoreSession());
 </script>
 </div><!-- /mainContent -->
 <div id="printArea"></div>
