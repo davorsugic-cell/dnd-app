@@ -869,6 +869,18 @@
     </div>
   </div>
 
+  <!-- Zaposleni - pregled za obračun (isti podaci kao Kadrovska, drugi prikaz) -->
+  <div class="section">
+    <h3>Zaposleni <span style="font-size:11px;font-weight:400;color:var(--muted);">(isti podaci kao u Kadrovskoj evidenciji — izmjene se rade tamo)</span></h3>
+    <div class="toolbar" style="margin:0 0 10px;">
+      <input type="search" id="ob_zapSearch" placeholder="Pretraga po imenu..." style="flex:1; min-width:180px;">
+      <select id="ob_zapPoslovnicaFilter"><option value="">Sve poslovnice</option></select>
+    </div>
+    <div class="table-wrap" style="max-height:60vh;">
+      <div id="ob_zaposleniBody"></div>
+    </div>
+  </div>
+
   <!-- Shared šifarnici iz kadrovske -->
   <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px; margin-bottom:20px;">
     <div class="section">
@@ -7296,7 +7308,7 @@ function switchModule(modul) {
     $('appWrap').style.display = 'none';
     const el = document.getElementById('modul_' + modul);
     if (el) el.style.display = '';
-    if (modul === 'obracun') renderObracunSifarnici();
+    if (modul === 'obracun') { renderObracunSifarnici(); renderObracunZaposleni(); }
     if (modul === 'troskovi') renderArtikli();
   }
   // Ažuriraj module buttone
@@ -7323,6 +7335,55 @@ function switchModule(modul) {
       if (el) el.style.display = isKadrovska ? '' : 'none';
     });
 }
+
+// Obračun plata - pregled zaposlenih (isti podaci kao Kadrovska, drugačiji prikaz -
+// kolone relevantne za obračun umjesto punog kadrovskog kartona).
+function renderObracunZaposleni() {
+  const poslovnicaSel = $('ob_zapPoslovnicaFilter');
+  if (!poslovnicaSel.dataset.populated) {
+    const allowed = accessiblePoslovnicaNazivi();
+    const poslovniceSet = new Set(employees.filter(e => allowed === null || allowed.includes(e.Poslovnica)).map(e => e.Poslovnica).filter(Boolean));
+    poslovnicaSel.innerHTML = '<option value="">Sve poslovnice</option>' + [...poslovniceSet].map(p => `<option value="${escapeXml(p)}">${escapeXml(p)}</option>`).join('');
+    poslovnicaSel.dataset.populated = '1';
+  }
+
+  const body = $('ob_zaposleniBody');
+  const search = ($('ob_zapSearch').value || '').toLowerCase().trim();
+  const fPoslovnica = poslovnicaSel.value;
+
+  const lista = accessibleEmployeesList()
+    .filter(x => !fPoslovnica || x.emp.Poslovnica === fPoslovnica)
+    .filter(x => !search || (x.emp.Ime_i_prezime || '').toLowerCase().includes(search))
+    .sort((a, b) => (a.emp.Ime_i_prezime || '').localeCompare(b.emp.Ime_i_prezime || '', 'bs'));
+
+  if (!lista.length) {
+    body.innerHTML = '<div class="empty">Nema zaposlenih za izabrani filter.</div>';
+    return;
+  }
+
+  body.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:13px;">
+    <thead><tr>
+      <th style="background:var(--accent);color:#fff;padding:7px 10px;text-align:left;font-size:11px;">Ime i prezime</th>
+      <th style="background:var(--accent);color:#fff;padding:7px 10px;text-align:left;font-size:11px;">Poslovnica</th>
+      <th style="background:var(--accent);color:#fff;padding:7px 10px;text-align:left;font-size:11px;">Radno mjesto</th>
+      <th style="background:var(--accent);color:#fff;padding:7px 10px;text-align:left;font-size:11px;">Tip ugovora</th>
+      <th style="background:var(--accent);color:#fff;padding:7px 10px;text-align:right;font-size:11px;">Radno vrijeme</th>
+      <th style="background:var(--accent);color:#fff;padding:7px 10px;text-align:right;font-size:11px;">Bruto plata</th>
+      <th style="background:var(--accent);color:#fff;padding:7px 10px;text-align:right;font-size:11px;">Neto plata</th>
+    </tr></thead>
+    <tbody>${lista.map(({ emp }, i) => `<tr style="background:${i % 2 ? 'var(--row-alt)' : '#fff'}">
+      <td style="padding:6px 10px;">${escapeXml(emp.Ime_i_prezime || '')}</td>
+      <td style="padding:6px 10px;">${escapeXml(emp.Poslovnica || '\u2014')}</td>
+      <td style="padding:6px 10px;">${escapeXml(emp.Radno_mjesto || '\u2014')}</td>
+      <td style="padding:6px 10px;">${escapeXml(emp.Tip_ugovora || '\u2014')}</td>
+      <td style="padding:6px 10px;text-align:right;">${escapeXml(emp.Radno_vrijeme || '\u2014')}</td>
+      <td style="padding:6px 10px;text-align:right;">${escapeXml(emp.Bruto_plata || '\u2014')}</td>
+      <td style="padding:6px 10px;text-align:right;">${escapeXml(emp.Neto_plata || '\u2014')}</td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+$('ob_zapSearch').addEventListener('input', renderObracunZaposleni);
+$('ob_zapPoslovnicaFilter').addEventListener('change', renderObracunZaposleni);
 
 // Obračun plata - prikaz shared šifarnika iz kadrovske
 function renderObracunSifarnici() {
