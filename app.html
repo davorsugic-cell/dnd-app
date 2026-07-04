@@ -5794,17 +5794,29 @@ function generisiRasporedMjeseca(radnoMjesto, godina, mjesec, firmaId, empSeed) 
           const danKeyX = DAN_INDEX_TO_KEY[x.datum.getDay()];
           const vrijeme = vrijemeZaSmjenuIDan(raspored, sm.v, danKeyX) || sm.def;
           x.smjena = sm.v; x.pocetak = vrijeme.od; x.kraj = vrijeme.do; x.sati = diffSati(vrijeme.od, vrijeme.do);
+          // Ako je za ovaj dan korišten IZUZETAK (posebno vrijeme, npr. petak duže traje),
+          // taj dan se ne dira prilikom uklapanja na 40h - ostaje tačno onako kako je
+          // podešeno, a ostali (obični) dani te sedmice se prilagođavaju da nadoknade razliku.
+          x.jeIzuzetakDan = (vrijeme !== sm.def);
         }
       });
     }
 
-    const radniDaniSedmice = weekSlice.filter(x => x.smjena && !x.jePraznikDan);
-    const brojNeradnihPraznikaTeSedmice = weekSlice.filter(x => x.jePraznikDan).length;
+    // Dani sa izuzetkom (posebno podešeno vrijeme za taj dan) ostaju fiksni - ne diraju se.
+    // Ostali radni dani te sedmice se uklapaju da ZAJEDNO sa izuzecima i praznicima zbir
+    // bude tačno 40h (odnosno 40h umanjeno za neradne/radne praznike te sedmice).
+    const izuzetakDaniSedmice = weekSlice.filter(x => x.smjena && x.jeIzuzetakDan && !x.jePraznikDan && !x.jeRadniPraznikDan);
+    const izuzetakSatiTeSedmice = izuzetakDaniSedmice.reduce((s, x) => s + x.sati, 0);
+    const radniDaniSedmice = weekSlice.filter(x => x.smjena && !x.jePraznikDan && !x.jeRadniPraznikDan && !x.jeIzuzetakDan);
+    // Svaki praznik (radni ili neradni) smanjuje zakonski fond te sedmice - fond je fiksan
+    // bez obzira da li se praznik radi ili ne. Sati odrađeni NA sam praznik (radni praznik)
+    // se ne uklapaju u ovih 40h - oni ostaju kao dodatni sati "Rad na dan praznika" povrh fonda.
+    const brojPraznikaTeSedmice = weekSlice.filter(x => x.jePraznikDan || x.jeRadniPraznikDan).length;
 
     if (radniDaniSedmice.length) {
       const trenutnoUkupno = radniDaniSedmice.reduce((s, x) => s + x.sati, 0);
       const ciljanoUkupno = potpunaSedmica
-        ? Math.max(0, 40 - brojNeradnihPraznikaTeSedmice * 8)
+        ? Math.max(0, 40 - brojPraznikaTeSedmice * 8 - izuzetakSatiTeSedmice)
         : Math.round(trenutnoUkupno);
       rasporediCijeleSate(radniDaniSedmice, ciljanoUkupno);
     }
