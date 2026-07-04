@@ -5888,7 +5888,14 @@ function generisiSihtericuZaZaposlenog(empIdx, godina, mjesec) {
       }
     }
     else if (isGO) { status.tip = 'go'; status.redovnoSati = 0; status.pocetak = ''; status.kraj = ''; }
-    else if (isRadniPraznik && status.tip === 'rad') { status.tip = 'praznik_rad'; }
+    else if (isRadniPraznik) {
+      if (status.tip === 'rad') {
+        status.tip = 'praznik_rad';
+      } else {
+        status.tip = 'praznik';
+        status.redovnoSati = 0; status.pocetak = ''; status.kraj = '';
+      }
+    }
 
     if (override) {
       if (override.tip === 'sati') {
