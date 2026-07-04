@@ -5799,10 +5799,13 @@ function generisiRasporedMjeseca(radnoMjesto, godina, mjesec, firmaId, empSeed) 
     }
 
     const radniDaniSedmice = weekSlice.filter(x => x.smjena && !x.jePraznikDan);
+    const brojNeradnihPraznikaTeSedmice = weekSlice.filter(x => x.jePraznikDan).length;
 
     if (radniDaniSedmice.length) {
       const trenutnoUkupno = radniDaniSedmice.reduce((s, x) => s + x.sati, 0);
-      const ciljanoUkupno = potpunaSedmica ? 40 : Math.round(trenutnoUkupno);
+      const ciljanoUkupno = potpunaSedmica
+        ? Math.max(0, 40 - brojNeradnihPraznikaTeSedmice * 8)
+        : Math.round(trenutnoUkupno);
       rasporediCijeleSate(radniDaniSedmice, ciljanoUkupno);
     }
 
