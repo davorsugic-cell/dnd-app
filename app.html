@@ -1342,6 +1342,7 @@
         <input type="number" id="sihDoDana" style="width:60px;" min="1" max="31" placeholder="npr. 20">
       </label>
       <div class="spacer"></div>
+      <button type="button" class="primary" id="sihZakljuciBtn" title="Generiše i trajno snima šihtericu za sve zaposlene po trenutnom filteru, uklapajući na unesen fond sati">🔒 Generiši i zaključi (po filteru)</button>
       <button type="button" class="secondary" id="sihGenerisiBtn">Generiši/Ažuriraj</button>
     </div>
     <div id="sihFondUpozorenje" style="display:none; margin:0 0 10px; padding:8px 12px; background:#fdecea; color:#a33; border-radius:6px; font-size:12.5px; font-weight:600;"></div>
@@ -6504,10 +6505,17 @@ function openSihOverrideEditor(dan, godina, mjesec) {
 }
 
 async function applySihOverride(dan, godina, mjesec, izbor) {
-  const emp = employees[sihSelectedEmpIndex];
+  await applySihOverrideZaZaposlenog(sihSelectedEmpIndex, dan, godina, mjesec, izbor, true);
+}
+
+// Generička verzija - prima empIdx eksplicitno (koristi je i applySihOverride za jednog
+// zaposlenog preko UI-ja, i grupno zaključivanje šihterice za više zaposlenih odjednom).
+// tihoBezToasta=true preskače toast/render (koristi se u grupnim operacijama radi brzine).
+async function applySihOverrideZaZaposlenog(empIdx, dan, godina, mjesec, izbor, sPrikazom) {
+  const emp = employees[empIdx];
   const empDbId = emp ? emp._db_id : null;
 
-  sihtericaOverrides = sihtericaOverrides.filter(o => !(o.emp_idx === sihSelectedEmpIndex && o.godina === godina && o.mjesec === mjesec && o.dan === dan));
+  sihtericaOverrides = sihtericaOverrides.filter(o => !(o.emp_idx === empIdx && o.godina === godina && o.mjesec === mjesec && o.dan === dan));
 
   // Ukloni prethodni red u bazi za taj dan (ako je postojao)
   if (empDbId) {
@@ -6521,11 +6529,11 @@ async function applySihOverride(dan, godina, mjesec, izbor) {
     const satiMatch = izbor.match(/^(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})$/);
     let novi = null;
     if (satiMatch) {
-      novi = { emp_idx: sihSelectedEmpIndex, emp_db_id: empDbId, godina, mjesec, dan, tip: 'sati', pocetak: satiMatch[1], kraj: satiMatch[2] };
+      novi = { emp_idx: empIdx, emp_db_id: empDbId, godina, mjesec, dan, tip: 'sati', pocetak: satiMatch[1], kraj: satiMatch[2] };
     } else if (VRSTE_ODSUSTVA.includes(izbor) || izbor === 'go' || izbor === 'praznik') {
-      novi = { emp_idx: sihSelectedEmpIndex, emp_db_id: empDbId, godina, mjesec, dan, tip: 'sifra', vrijednost: izbor };
+      novi = { emp_idx: empIdx, emp_db_id: empDbId, godina, mjesec, dan, tip: 'sifra', vrijednost: izbor };
     } else {
-      toast('Nepoznat format. Koristi HH:MM-HH:MM ili važeću šifru.');
+      if (sPrikazom) toast('Nepoznat format. Koristi HH:MM-HH:MM ili važeću šifru.');
       return;
     }
     sihtericaOverrides.push(novi);
@@ -6536,14 +6544,85 @@ async function applySihOverride(dan, godina, mjesec, izbor) {
           tip: novi.tip, pocetak: novi.pocetak || null, kraj: novi.kraj || null, vrijednost: novi.vrijednost || null,
         }).select();
         if (data && data[0]) novi._db_id = data[0].id;
-      } catch(e) { console.error(e); toast('Greška pri snimanju izmjene.'); }
+      } catch(e) { console.error(e); if (sPrikazom) toast('Greška pri snimanju izmjene.'); }
     }
   }
 
-  const empName = emp ? emp.Ime_i_prezime : '';
-  await logAction('Šihterica', empName, `Ručna izmjena za dan ${dan}.${mjesec}.${godina}`);
+  if (sPrikazom) {
+    const empName = emp ? emp.Ime_i_prezime : '';
+    await logAction('Šihterica', empName, `Ručna izmjena za dan ${dan}.${mjesec}.${godina}`);
+    renderSihtericaTable();
+    toast('Sačuvano.');
+  }
+}
+
+// Generiše šihtericu za sve zaposlene po trenutnom filteru (firma/poslovnica/radno mjesto)
+// i TRAJNO je snima (kao ručne izmjene/overrides), uklapajući ukupne redovne sate na
+// zvanično unesen fond sati za taj mjesec (ako je unesen). Nakon zaključivanja, šihterica
+// se više ne mijenja nasumično - ostaje ista dok se ručno ne izmijeni "Izmijeni" dugmetom.
+async function zakljuciSihtericuZaFilter(godina, mjesec) {
+  const lista = sihFilteredEmployees();
+  if (!lista.length) { toast('Nema zaposlenih za izabrani filter.'); return; }
+  const fond = getFondSati(godina, mjesec);
+  const potvrda = confirm(
+    `Generisati i TRAJNO sačuvati šihtericu za ${lista.length} zaposlenih za ${MJESECI_NAZIVI[mjesec - 1]} ${godina}.?\n\n` +
+    (fond != null ? `Uklopiće se na fond od ${fond}h po zaposlenom.\n\n` : `Fond sati nije unesen za ovaj mjesec - uklapanje na tačan fond neće biti moguće, samo standardni raspored.\n\n`) +
+    `Ovo će zamijeniti postojeće ručne izmjene za ove zaposlene u ovom mjesecu.`
+  );
+  if (!potvrda) return;
+
+  toast(`Generišem za ${lista.length} zaposlenih, sačekaj...`);
+
+  for (const { emp, idx } of lista) {
+    // Obriši postojeće izmjene za ovog zaposlenog/mjesec - počinjemo iznova
+    const postojeci = sihtericaOverrides.filter(o => o.emp_idx === idx && o.godina === godina && o.mjesec === mjesec);
+    for (const o of postojeci) {
+      await applySihOverrideZaZaposlenog(idx, o.dan, godina, mjesec, 'obrisi', false);
+    }
+
+    // Generiši "sirovi" mjesec (bez prethodnih izmjena, jer smo ih upravo obrisali)
+    const dani = generisiSihtericuZaZaposlenog(idx, godina, mjesec);
+
+    // Ako je fond unesen, uklopi razliku na zadnjim regularnim radnim danima ('rad')
+    if (fond != null) {
+      const ukupnoRad = dani.reduce((s, d) => s + (d.tip === 'rad' ? (d.redovnoSati || 0) : 0), 0);
+      let razlika = Math.round(fond - ukupnoRad);
+      const radniDani = dani.filter(d => d.tip === 'rad' && d.pocetak && d.kraj);
+      let pokusaji = 0;
+      let pIdx = radniDani.length - 1;
+      while (razlika !== 0 && radniDani.length && pokusaji < radniDani.length * 20) {
+        const d = radniDani[pIdx];
+        const korak = razlika > 0 ? 1 : -1;
+        const noviSati = Math.max(1, (d.redovnoSati || 0) + korak);
+        const stvarnaPromjena = noviSati - (d.redovnoSati || 0);
+        if (stvarnaPromjena !== 0) {
+          d.redovnoSati = noviSati;
+          const [oh, om] = d.pocetak.split(':').map(Number);
+          const noviMin = oh * 60 + om + noviSati * 60;
+          const nh = Math.floor(noviMin / 60) % 24;
+          const nm = Math.round(noviMin % 60);
+          d.kraj = `${String(nh).padStart(2, '0')}:${String(nm).padStart(2, '0')}`;
+          razlika -= stvarnaPromjena;
+        }
+        pIdx = pIdx <= 0 ? radniDani.length - 1 : pIdx - 1;
+        pokusaji++;
+      }
+    }
+
+    // Sačuvaj svaki dan kad se stvarno radi (rad ili rad na praznik) kao trajnu izmjenu.
+    // Klasifikacija rad/praznik_rad se i dalje računa automatski na osnovu kalendara -
+    // ovdje samo fiksiramo KOJE sate/vrijeme taj dan ima.
+    for (const d of dani) {
+      if (d.pocetak && d.kraj && (d.tip === 'rad' || d.tip === 'praznik_rad')) {
+        await applySihOverrideZaZaposlenog(idx, d.dan, godina, mjesec, `${d.pocetak}-${d.kraj}`, false);
+      }
+    }
+
+    await logAction('Šihterica', emp.Ime_i_prezime, `Generisana i zaključena šihterica za ${MJESECI_NAZIVI[mjesec - 1]} ${godina}.`);
+  }
+
+  toast(`Gotovo - šihterica zaključena za ${lista.length} zaposlenih.`);
   renderSihtericaTable();
-  toast('Sačuvano.');
 }
 
 $('sihtericaBtn').addEventListener('click', () => {
@@ -6562,6 +6641,11 @@ $('sihEmployeeSelect').addEventListener('change', () => {
   renderSihtericaTable();
 });
 $('sihGenerisiBtn').addEventListener('click', () => renderSihtericaTable());
+$('sihZakljuciBtn').addEventListener('click', () => {
+  const godina = parseInt($('sihGodina').value, 10) || new Date().getFullYear();
+  const mjesec = parseInt($('sihMjesec').value, 10) || (new Date().getMonth() + 1);
+  zakljuciSihtericuZaFilter(godina, mjesec);
+});
 
 const MJESECI_CIRILICA = ['јануар','фебруар','март','април','мај','јуни','јули','август','септембар','октобар','новембар','децембар'];
 
