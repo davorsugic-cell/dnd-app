@@ -1337,6 +1337,10 @@
         Fond sati za mjesec:
         <input type="number" id="sihFondSati" style="width:70px;" placeholder="npr. 168">
       </label>
+      <label style="display:flex; align-items:center; gap:6px; font-size:12px; font-weight:700; white-space:nowrap;">
+        Prikaži/štampaj do dana:
+        <input type="number" id="sihDoDana" style="width:60px;" min="1" max="31" placeholder="npr. 20">
+      </label>
       <div class="spacer"></div>
       <button type="button" class="secondary" id="sihGenerisiBtn">Generiši/Ažuriraj</button>
     </div>
@@ -2528,6 +2532,18 @@ async function deleteOdsustvo(o) {
 function getFondSati(godina, mjesec) {
   const f = fondSati.find(x => x.godina === godina && x.mjesec === mjesec);
   return f ? f.sati : null;
+}
+
+// "Klipuje" listu dana šihterice tako da dani POSLIJE datog dana (doDana) ostanu
+// prazni (bez sati/statusa) - koristi se kad se štampa šihterica do određenog datuma
+// (npr. za kontrolu usred mjeseca), da se ne prikazuje/štampa planirani raspored za
+// dane koji se još nisu desili.
+function klipujDoDana(dani, doDana) {
+  if (!doDana) return dani;
+  return dani.map(d => d.dan > doDana
+    ? { ...d, pocetak: '', kraj: '', redovnoSati: 0, tip: 'buduci' }
+    : d
+  );
 }
 
 // Snima (dodaje ili ažurira) fond sati za dati mjesec/godinu.
@@ -5974,7 +5990,7 @@ const SIHTERICA_TIP_LABELS = {
   bolovanje: 'Privremena nesposobnost', placeno: 'Plaćeno odsustvo', neplaceno: 'Neplaćeno odsustvo',
   porodiljsko: 'Porodiljsko odsustvo', bez_krivice: 'Odsustvo bez krivice radnika', drugi_osnov: 'Odsustvo po drugom osnovu',
   nocni_rad: 'Rad noću', prekovremeni: 'Prekovremeni rad', terenski: 'Terenski rad',
-  dezurstvo: 'Dežurstvo', pripravnost: 'Pripravnost',
+  dezurstvo: 'Dežurstvo', pripravnost: 'Pripravnost', buduci: '',
 };
 const SIHTERICA_TIP_KRATKO = {
   rad: 'R', slobodno: '', praznik: 'P', praznik_rad: 'PR', go: 'GO',
@@ -6405,7 +6421,7 @@ function renderSihtericaTable() {
   }
   const godina = parseInt($('sihGodina').value, 10) || new Date().getFullYear();
   const mjesec = parseInt($('sihMjesec').value, 10) || (new Date().getMonth() + 1);
-  const dani = generisiSihtericuZaZaposlenog(sihSelectedEmpIndex, godina, mjesec);
+  const dani = klipujDoDana(generisiSihtericuZaZaposlenog(sihSelectedEmpIndex, godina, mjesec), parseInt($('sihDoDana').value, 10) || null);
 
   // Fond sati polje - popuni iz šifarnika (ako je unesen za ovaj mjesec/godinu)
   const fondInp = $('sihFondSati');
@@ -6549,9 +6565,9 @@ $('sihGenerisiBtn').addEventListener('click', () => renderSihtericaTable());
 
 const MJESECI_CIRILICA = ['јануар','фебруар','март','април','мај','јуни','јули','август','септембар','октобар','новембар','децембар'];
 
-function sihtericaHtmlZaZaposlenog(empIdx, godina, mjesec) {
+function sihtericaHtmlZaZaposlenog(empIdx, godina, mjesec, doDana) {
   const emp = employees[empIdx];
-  const dani = generisiSihtericuZaZaposlenog(empIdx, godina, mjesec);
+  const dani = klipujDoDana(generisiSihtericuZaZaposlenog(empIdx, godina, mjesec), doDana);
   let ukupnoRad = 0, ukupnoNocni = 0, ukupnoPrekovremeni = 0, ukupnoPraznikRad = 0, ukupnoTerenski = 0, ukupnoDezurstvo = 0, ukupnoPripravnost = 0;
   let ukupnoGO = 0, ukupnoPraznik = 0, ukupnoBolovanje = 0, ukupnoPorodiljsko = 0, ukupnoPlaceno = 0, ukupnoNeplaceno = 0, ukupnoBezKrivice = 0, ukupnoDrugiOsnov = 0;
 
@@ -6667,8 +6683,8 @@ function sihtericaHtmlZaZaposlenog(empIdx, godina, mjesec) {
   `;
 }
 
-function stampajSihtericu(empIndexes, godina, mjesec) {
-  const sviHtml = empIndexes.map(idx => sihtericaHtmlZaZaposlenog(idx, godina, mjesec)).join('');
+function stampajSihtericu(empIndexes, godina, mjesec, doDana) {
+  const sviHtml = empIndexes.map(idx => sihtericaHtmlZaZaposlenog(idx, godina, mjesec, doDana)).join('');
   printInline(`
     <style>
       @page { size: A4 landscape; margin: 10mm; }
@@ -6682,15 +6698,17 @@ $('sihStampajJednogBtn').addEventListener('click', () => {
   if (sihSelectedEmpIndex === null) { toast('Izaberi zaposlenog.'); return; }
   const godina = parseInt($('sihGodina').value, 10) || new Date().getFullYear();
   const mjesec = parseInt($('sihMjesec').value, 10) || (new Date().getMonth() + 1);
-  stampajSihtericu([sihSelectedEmpIndex], godina, mjesec);
+  const doDana = parseInt($('sihDoDana').value, 10) || null;
+  stampajSihtericu([sihSelectedEmpIndex], godina, mjesec, doDana);
 });
 
 $('sihStampajSveBtn').addEventListener('click', () => {
   const godina = parseInt($('sihGodina').value, 10) || new Date().getFullYear();
   const mjesec = parseInt($('sihMjesec').value, 10) || (new Date().getMonth() + 1);
+  const doDana = parseInt($('sihDoDana').value, 10) || null;
   const list = sihFilteredEmployees().map(x => x.idx);
   if (!list.length) { toast('Nema zaposlenih za izabrani filter.'); return; }
-  stampajSihtericu(list, godina, mjesec);
+  stampajSihtericu(list, godina, mjesec, doDana);
 });
 
 // ---------- Istek ugovora ----------
