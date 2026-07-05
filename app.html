@@ -2605,7 +2605,19 @@ function resolveFirmaZaPoslodavca() {
 // Returns array of poslovnica nazivi the current user can see, or null = sve (glavni administrator)
 function accessiblePoslovnicaNazivi() {
   const u = currentSessionUser;
-  if (!u || u.firma_id == null) return null; // super_admin vidi sve
+  if (!u || u.firma_id == null) {
+    // Super admin vidi sve, OSIM ako je aktivan filter firme u gornjem lijevom uglu -
+    // u tom slučaju suzi na poslovnice te izabrane firme.
+    if (aktivnaFirmaFilter !== null) {
+      const firmaPoslovnice = poslovnice.filter(p => p.firma_id === aktivnaFirmaFilter);
+      if (firmaPoslovnice.length === 0) {
+        const firma = firme.find(f => f.id === aktivnaFirmaFilter);
+        return firma ? [firma.naziv] : [];
+      }
+      return firmaPoslovnice.map(p => p.naziv);
+    }
+    return null;
+  }
   if (u.poslovnica_id != null) {
     // Korisnik vezan za konkretnu poslovnicu
     const p = poslovnice.find(x => x.id === u.poslovnica_id);
@@ -2621,10 +2633,14 @@ function accessiblePoslovnicaNazivi() {
   return firmaPoslovnice.map(p => p.naziv);
 }
 
-// Returns array of firma ids the current user can see, or null = sve (glavni administrator)
+// Returns array of firma ids the current user can see, or null = sve (glavni administrator).
+// Poštuje i filter firme u gornjem lijevom uglu (aktivnaFirmaFilter) kad je aktivan.
 function accessibleFirmaIds() {
   const u = currentSessionUser;
-  if (!u || u.firma_id == null) return null;
+  if (!u || u.firma_id == null) {
+    return aktivnaFirmaFilter !== null ? [aktivnaFirmaFilter] : null;
+  }
+  if (aktivnaFirmaFilter !== null && aktivnaFirmaFilter !== u.firma_id) return [];
   return [u.firma_id];
 }
 
@@ -2928,16 +2944,6 @@ function render() {
 
   const filtered = employees.filter(e => {
     if (allowedPoslovnice !== null && !allowedPoslovnice.includes(e.Poslovnica)) return false;
-    // Filter po izabranoj firmi (samo za admin)
-    if (aktivnaFirmaFilter !== null) {
-      const poslovniceFilm = (typeof poslovnice !== 'undefined' ? poslovnice : [])
-        .filter(p => p.firma_id === aktivnaFirmaFilter).map(p => p.naziv);
-      if (poslovniceFilm.length === 0) {
-        // Firma nema poslovnica - koristi naziv firme kao identifikator
-        const firmaNaziv = (firme.find(f => f.id === aktivnaFirmaFilter) || {}).naziv;
-        if (e.Poslovnica !== firmaNaziv) return false;
-      } else if (!poslovniceFilm.includes(e.Poslovnica)) return false;
-    }
     if (search && !(e.Ime_i_prezime || '').toLowerCase().includes(search)) return false;
     if (fPoslovnica && e.Poslovnica !== fPoslovnica) return false;
     if (fTip && e.Tip_ugovora !== fTip) return false;
@@ -7141,7 +7147,7 @@ document.getElementById('sidebar').addEventListener('click', (e) => {
 let aktivnaFirmaFilter = null; // null = sve firme
 
 function initFirmaDropdown() {
-  const isAdminUser = isGlavniAdmin() || isFirmaAdmin();
+  const isAdminUser = isGlavniAdmin();
   const wrap = document.getElementById('firmaDropdownWrap');
   const eyebrow = document.getElementById('firmaEyebrow');
   const roleLabel = document.getElementById('sidebarRoleLabel');
@@ -7154,7 +7160,8 @@ function initFirmaDropdown() {
   }
 
   if (!isAdminUser) {
-    // Obični korisnik — samo prikaži naziv firme
+    // Administrator (vezan za jednu firmu) ili obični korisnik — samo prikaži naziv firme,
+    // bez interaktivnog izbora (nemaju pristup drugim firmama da biraju među njima).
     if (wrap) wrap.style.display = 'none';
     if (eyebrow && currentSessionUser && currentSessionUser.firma_id) {
       const firma = firme.find(f => f.id === currentSessionUser.firma_id);
@@ -7214,10 +7221,35 @@ function selectFirmaFilter(firmaId) {
   document.getElementById('firmaDropdownLabel').textContent = firma ? firma.naziv : 'Sve firme';
   document.getElementById('firmaDropdownPanel').classList.remove('open');
   renderFirmaList('');
-  // Filtriraj podatke u aktivnom modulu
-  if (aktivniModul === 'kadrovska' || !aktivniModul) {
-    render(); // osvježi tabelu zaposlenika
+  osvjeziTrenutniPrikazNakonPromjeneFirme();
+}
+
+// Osvježava koji god ekran je trenutno vidljiv (u bilo kom modulu, uključujući otvorene
+// "stranice" poput Firme/Komitenti/Izvještaji/GO/Šihterica) nakon promjene filtera firme
+// u gornjem lijevom uglu, tako da se izmjena odmah vidi bez obzira gdje se korisnik nalazi.
+function osvjeziTrenutniPrikazNakonPromjeneFirme() {
+  if (aktivniModul === 'obracun') {
+    if (typeof renderObracunZaposleni === 'function') renderObracunZaposleni();
+    return;
   }
+  if (aktivniModul === 'troskovi') {
+    if (typeof renderArtikli === 'function') renderArtikli();
+    return;
+  }
+  // Kadrovska (ili nepoznat modul, podrazumijevano)
+  render();
+  const jeOtvoreno = (id) => { const el = document.getElementById(id); return el && el.classList.contains('open'); };
+  if (jeOtvoreno('firmeOverlay')) renderFirmeModal();
+  if (jeOtvoreno('komitentiOverlay')) renderKomitentiModal();
+  if (jeOtvoreno('goOverlay')) renderGoModal();
+  if (jeOtvoreno('sihtericaOverlay')) { populateSihFilters(); populateSihEmployeeSelect(); renderSihtericaTable(); }
+  if (jeOtvoreno('expiryOverlay')) renderExpiryModal();
+  if (jeOtvoreno('reportsOverlay')) renderReports();
+  if (jeOtvoreno('radnaMjestaOverlay')) { renderSingleCodeList('Radno_mjesto', 'radnoMjestoListBody'); renderRaspored(); }
+  if (jeOtvoreno('odjeliOverlay')) renderSingleCodeList('Odjel', 'odjeliBody');
+  if (jeOtvoreno('tipUgovoraOverlay')) renderSingleCodeList('Tip_ugovora', 'tipUgovoraBody');
+  if (jeOtvoreno('strucnaSpremaOverlay')) renderSingleCodeList('Strucna_sprema', 'strucnaSpremaBody');
+  if (jeOtvoreno('praznikOverlay')) renderPraznieci();
 }
 // ──────────────────────────────────────────────────────────────────────
 
