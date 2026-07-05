@@ -4,267 +4,339 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kontakt — DND Solutions</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-*{margin:0;padding:0;box-sizing:border-box;}
+/* ===== DND SOLUTIONS — DESIGN SYSTEM ===== */
+
 :root{
---navy:#0d1b35;
---navy2:#162040;
---blue:#2563eb;
---blue-light:#3b82f6;
---blue-glow:#60a5fa;
-}
-html,body{min-height:100%;font-family:'Inter',sans-serif;background:var(--navy);color:#fff;}
+  /* Color */
+  --bg: #0F1720;
+  --bg-alt: #161E29;
+  --surface: #1D2733;
+  --border: #2A3540;
+  --text: #E8EBEF;
+  --text-dim: #8A96A3;
+  --accent: #3E7CB1;
+  --accent-light: #5B9BD5;
+  --success: #4A9B7F;
 
-nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 48px;height:62px;background:rgba(13,27,53,0.95);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.07);}
-.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;}
-.nav-logo-icon{width:32px;height:32px;background:var(--blue);border-radius:7px;display:flex;align-items:center;justify-content:center;}
+  /* Spacing scale (4px base) */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-12: 48px;
+  --sp-16: 64px;
+  --sp-24: 96px;
+  --sp-32: 128px;
+
+  /* Type */
+  --font-display: 'IBM Plex Sans', 'Inter', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+
+html{scroll-behavior:smooth;}
+
+body{
+  font-family:var(--font-body);
+  background:var(--bg);
+  color:var(--text);
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+
+img,svg{display:block;max-width:100%;}
+
+a{color:inherit;text-decoration:none;}
+
+::selection{background:var(--accent);color:#fff;}
+
+:focus-visible{outline:2px solid var(--accent-light);outline-offset:2px;border-radius:4px;}
+
+/* ===== LAYOUT ===== */
+.wrap{max-width:1120px;margin:0 auto;padding-left:var(--sp-6);padding-right:var(--sp-6);}
+.section{padding:var(--sp-24) 0;}
+.section-tight{padding:var(--sp-16) 0;}
+
+@media (max-width:720px){
+  .section{padding:var(--sp-16) 0;}
+  .section-tight{padding:var(--sp-12) 0;}
+}
+
+/* ===== NAV ===== */
+nav{
+  position:sticky;top:0;z-index:100;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 var(--sp-8);height:64px;
+  background:rgba(15,23,32,0.9);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--border);
+}
+.nav-logo{display:flex;align-items:center;gap:10px;}
+.nav-logo-icon{width:32px;height:32px;background:var(--accent);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .nav-logo-icon svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
-.nav-logo-text span:first-child{display:block;font-size:14px;font-weight:700;color:#fff;letter-spacing:0.02em;}
-.nav-logo-text span:last-child{display:block;font-size:9px;font-weight:400;color:rgba(255,255,255,0.45);letter-spacing:0.1em;text-transform:uppercase;}
-.nav-links{display:flex;align-items:center;gap:28px;}
-.nav-links a{text-decoration:none;color:rgba(255,255,255,0.6);font-size:13.5px;transition:color 0.2s;}
-.nav-links a:hover{color:#fff;}
-.nav-links a.active{color:#fff;}
-.nav-right{display:flex;align-items:center;gap:14px;}
-.nav-icons{display:flex;align-items:center;gap:12px;}
-.nav-icons a{color:rgba(255,255,255,0.5);display:flex;align-items:center;transition:color 0.2s;}
-.nav-icons a:hover{color:#fff;}
-.nav-icons svg{width:17px;height:17px;}
-.btn-login{background:var(--blue);color:#fff;text-decoration:none;padding:8px 20px;border-radius:7px;font-size:13.5px;font-weight:500;transition:background 0.2s;white-space:nowrap;}
-.btn-login:hover{background:var(--blue-light);}
+.nav-logo-text span:first-child{display:block;font-family:var(--font-display);font-size:14px;font-weight:600;color:var(--text);letter-spacing:0.01em;}
+.nav-logo-text span:last-child{display:block;font-family:var(--font-mono);font-size:10px;color:var(--text-dim);letter-spacing:0.06em;text-transform:uppercase;}
+.nav-links{display:flex;align-items:center;gap:var(--sp-8);}
+.nav-links a{font-size:14px;color:var(--text-dim);transition:color .2s;}
+.nav-links a:hover,.nav-links a.active{color:var(--text);}
+.nav-right{display:flex;align-items:center;gap:var(--sp-4);}
+.hamburger{display:none;flex-direction:column;gap:5px;background:none;border:none;cursor:pointer;padding:8px;}
+.hamburger span{width:20px;height:2px;background:var(--text);border-radius:2px;}
+.mobile-menu{display:none;position:fixed;top:64px;left:0;right:0;background:rgba(15,23,32,0.98);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);z-index:99;padding:var(--sp-2) var(--sp-6) var(--sp-6);flex-direction:column;}
+.mobile-menu.open{display:flex;}
+.mobile-menu a{color:var(--text-dim);font-size:15px;padding:var(--sp-3) 0;border-bottom:1px solid var(--border);}
+.mobile-menu a:last-of-type{border-bottom:none;}
+.mobile-menu .mm-cta{margin-top:var(--sp-3);}
 
-.hamburger{display:none;flex-direction:column;gap:4px;background:none;border:none;cursor:pointer;padding:6px;}
-.hamburger span{width:20px;height:2px;background:#fff;border-radius:2px;}
-.mobile-menu{display:none;}
-
-/* -- Hero -- */
-.mhero{padding:150px 48px 50px;max-width:920px;margin:0 auto;position:relative;overflow:hidden;}
-.glow{position:absolute;top:0;left:50%;transform:translateX(-50%);width:700px;height:400px;background:radial-gradient(ellipse,rgba(37,99,235,0.15) 0%,transparent 70%);pointer-events:none;}
-.back-link{display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,0.45);text-decoration:none;font-size:13px;margin-bottom:28px;transition:color 0.2s;}
-.back-link:hover{color:#fff;}
-.back-link svg{width:14px;height:14px;}
-.mhero-icon{width:64px;height:64px;border-radius:16px;background:rgba(37,99,235,0.14);border:1px solid rgba(37,99,235,0.3);display:flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:26px;}
-.mhero h1{font-size:clamp(28px,4vw,42px);font-weight:700;line-height:1.15;letter-spacing:-0.02em;max-width:640px;margin-bottom:16px;}
-.mhero .sub{font-size:16px;color:rgba(255,255,255,0.6);max-width:560px;line-height:1.65;}
-
-/* -- Contact grid -- */
-.contact-grid{max-width:920px;margin:0 auto;padding:10px 48px 110px;display:grid;grid-template-columns:1fr 1.35fr;gap:44px;position:relative;}
-.contact-info{display:flex;flex-direction:column;gap:14px;}
-.contact-card{display:flex;align-items:center;gap:14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:20px 22px;text-decoration:none;color:#fff;transition:border-color 0.2s,background 0.2s;}
-.contact-card:hover{background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.16);}
-.cc-icon{width:42px;height:42px;border-radius:11px;background:rgba(37,99,235,0.16);border:1px solid rgba(37,99,235,0.3);display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0;}
-.cc-icon svg{width:19px;height:19px;}
-.cc-label span:first-child{display:block;font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px;}
-.cc-label span:last-child{display:block;font-size:14.5px;font-weight:500;word-break:break-word;}
-
-.contact-form{display:flex;flex-direction:column;gap:18px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:18px;padding:32px;}
-.form-title{font-size:15px;font-weight:600;margin-bottom:2px;}
-.form-row{display:flex;flex-direction:column;gap:7px;}
-.form-row label{font-size:12.5px;color:rgba(255,255,255,0.55);}
-.req{color:#f87171;}
-.form-row input,.form-row textarea{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.13);border-radius:9px;padding:11px 14px;color:#fff;font-family:inherit;font-size:14px;outline:none;transition:border-color 0.2s,background 0.2s;width:100%;}
-.form-row input::placeholder,.form-row textarea::placeholder{color:rgba(255,255,255,0.3);}
-.form-row input:focus,.form-row textarea:focus{border-color:var(--blue);background:rgba(255,255,255,0.06);}
-.form-row textarea{resize:vertical;min-height:120px;}
-.form-cols{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
-.btn-submit{align-self:flex-start;background:var(--blue);color:#fff;border:none;padding:13px 30px;border-radius:9px;font-size:14px;font-weight:500;cursor:pointer;transition:background 0.2s;font-family:inherit;}
-.btn-submit:hover{background:var(--blue-light);}
-.form-note{font-size:11.5px;color:rgba(255,255,255,0.35);line-height:1.5;}
-
-footer.site-footer{display:flex;align-items:center;justify-content:space-between;padding:18px 48px;height:auto;background:rgba(255,255,255,0.02);border-top:1px solid rgba(255,255,255,0.06);font-size:12px;color:rgba(255,255,255,0.35);flex-wrap:wrap;gap:10px;}
-.bottom-links{display:flex;align-items:center;gap:20px;}
-.bottom-links a{color:rgba(255,255,255,0.4);text-decoration:none;display:flex;align-items:center;gap:5px;font-size:12px;transition:color 0.2s;}
-.bottom-links a:hover{color:#fff;}
-.bottom-links svg{width:13px;height:13px;}
-
-@media (max-width: 820px){
-  nav{padding:0 16px;height:52px;}
+@media (max-width:720px){
+  nav{padding:0 var(--sp-4);}
   .nav-links{display:none;}
-  .nav-icons{display:none;}
-  .btn-login{display:none;}
-  .nav-logo-text span:last-child{display:none;}
+  .nav-right .btn-ghost{display:none;}
   .hamburger{display:flex;}
-
-  .mhero{padding:96px 20px 30px;}
-  .glow{width:500px;height:300px;}
-  .contact-grid{grid-template-columns:1fr;padding:10px 20px 80px;gap:28px;}
-  .contact-form{padding:24px 20px;}
-  .form-cols{grid-template-columns:1fr;gap:14px;}
-  footer.site-footer{flex-direction:column;align-items:flex-start;padding:16px 20px;}
-
-  .mobile-menu{display:none;position:fixed;top:52px;left:0;right:0;background:rgba(13,27,53,0.98);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.08);z-index:99;padding:8px 18px 18px;flex-direction:column;}
-  .mobile-menu.open{display:flex;}
-  .mobile-menu a{color:rgba(255,255,255,0.75);text-decoration:none;font-size:15px;padding:12px 4px;border-bottom:1px solid rgba(255,255,255,0.06);}
-  .mobile-menu a:last-child{border-bottom:none;}
-  .mobile-menu .mm-icons{display:flex;gap:18px;padding-top:14px;}
-  .mobile-menu .mm-icons a{border:none;padding:0;display:flex;align-items:center;gap:6px;}
-  .mobile-menu .mm-login{background:var(--blue);text-align:center;border-radius:7px;margin-top:6px;}
 }
+
+/* ===== EYEBROW / BADGE ===== */
+.eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;
+  color:var(--accent-light);
+  padding:6px 12px;border:1px solid var(--border);border-radius:100px;
+  margin-bottom:var(--sp-4);
+}
+.eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--success);animation:pulse 2s ease-in-out infinite;}
+
+@keyframes pulse{
+  0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(74,155,127,0.5);}
+  50%{opacity:.7;box-shadow:0 0 0 4px rgba(74,155,127,0);}
+}
+
+/* ===== TYPE ===== */
+h1{font-family:var(--font-display);font-weight:600;letter-spacing:-0.02em;line-height:1.1;font-size:clamp(32px,4.8vw,54px);}
+h2{font-family:var(--font-display);font-weight:600;letter-spacing:-0.01em;line-height:1.2;font-size:clamp(26px,3.2vw,36px);}
+h3{font-family:var(--font-display);font-weight:600;font-size:19px;letter-spacing:-0.005em;}
+.lede{font-size:17px;color:var(--text-dim);max-width:540px;line-height:1.65;}
+.label-mono{font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-dim);}
+
+em{font-style:normal;color:var(--accent-light);}
+
+/* ===== BUTTONS ===== */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  font-size:14.5px;font-weight:500;font-family:var(--font-body);
+  padding:13px 26px;border-radius:8px;min-height:46px;
+  transition:background .18s,border-color .18s,transform .18s;
+  cursor:pointer;border:1px solid transparent;
+}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-primary:hover{background:var(--accent-light);}
+.btn-primary:active{transform:scale(0.98);}
+.btn-ghost{background:transparent;color:var(--text-dim);border-color:var(--border);}
+.btn-ghost:hover{color:var(--text);border-color:var(--text-dim);}
+.cta-row{display:flex;align-items:center;gap:var(--sp-4);flex-wrap:wrap;}
+
+/* ===== CARDS / CHIPS ===== */
+.card{
+  background:var(--bg-alt);border:1px solid var(--border);border-radius:12px;
+  padding:var(--sp-6);
+}
+.chip{
+  display:flex;align-items:flex-start;gap:var(--sp-3);
+  background:var(--bg-alt);border:1px solid var(--border);border-radius:10px;
+  padding:var(--sp-4) var(--sp-4);transition:border-color .2s,background .2s;
+}
+.chip:hover{border-color:var(--accent);background:var(--surface);}
+.chip-icon{width:36px;height:36px;border-radius:8px;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
+.chip-label span:first-child{display:block;font-size:14px;font-weight:600;color:var(--text);}
+.chip-label span:last-child{display:block;font-size:12.5px;color:var(--text-dim);margin-top:2px;}
+
+/* ===== INPUTS (border-glow focus) ===== */
+input,textarea,select{
+  width:100%;background:var(--bg-alt);border:1px solid var(--border);border-radius:8px;
+  padding:12px 14px;color:var(--text);font-family:var(--font-body);font-size:14.5px;
+  transition:box-shadow .15s,border-color .15s;
+}
+input::placeholder,textarea::placeholder{color:var(--text-dim);}
+input:focus,textarea:focus,select:focus{
+  outline:none;border-color:var(--accent);box-shadow:0 0 0 1px var(--accent);
+}
+label{display:block;font-size:13px;color:var(--text-dim);margin-bottom:6px;}
+.field{margin-bottom:var(--sp-4);}
+
+/* ===== DIVIDER ===== */
+.hr{height:1px;background:var(--border);border:none;margin:0;}
+
+/* ===== SCROLL REVEAL ===== */
+.reveal{opacity:0;transform:translateY(8px);transition:opacity .5s ease-out,transform .5s ease-out;}
+.reveal.in{opacity:1;transform:translateY(0);}
+
+@media (prefers-reduced-motion:reduce){
+  .reveal{opacity:1;transform:none;transition:none;}
+  .eyebrow .dot{animation:none;}
+  html{scroll-behavior:auto;}
+}
+
+/* ===== FOOTER ===== */
+footer{border-top:1px solid var(--border);padding:var(--sp-8) 0 var(--sp-6);}
+.footer-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--sp-4);}
+.footer-links{display:flex;gap:var(--sp-6);}
+.footer-links a{font-size:13px;color:var(--text-dim);}
+.footer-links a:hover{color:var(--text);}
+.copyright{font-family:var(--font-mono);font-size:12px;color:var(--text-dim);}
+
+/* ===== OBJECTION ACCORDION ===== */
+.objection{border:1px solid var(--border);border-radius:10px;margin-bottom:var(--sp-3);overflow:hidden;background:var(--bg-alt);}
+.objection-q{display:flex;align-items:center;justify-content:between;gap:var(--sp-3);padding:var(--sp-4) var(--sp-6);cursor:default;}
+.objection-q p{font-weight:600;font-size:15px;}
+.objection-a{padding:0 var(--sp-6) var(--sp-4);color:var(--text-dim);font-size:14.5px;border-top:1px solid var(--border);padding-top:var(--sp-4);}
+
+/* ===== GRID HELPERS ===== */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-8);}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--sp-6);}
+@media (max-width:820px){
+  .grid-2{grid-template-columns:1fr;gap:var(--sp-8);}
+  .grid-3{grid-template-columns:1fr;}
+}
+
 </style>
 </head>
 <body>
 
 <nav>
   <a href="index.html" class="nav-logo">
-    <div class="nav-logo-icon">
-      <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-    </div>
-    <div class="nav-logo-text">
-      <span>DND Solutions</span>
-      <span>Platforma za upravljanje</span>
-    </div>
+    <span class="nav-logo-icon"><svg viewBox="0 0 24 24"><path d="M12 2l9 4.5v9L12 20l-9-4.5v-9L12 2z"/><path d="M12 8v8M12 8l7-3.5M12 8L5 4.5"/></svg></span>
+    <span class="nav-logo-text"><span>DND Solutions</span><span>Platforma za upravljanje</span></span>
   </a>
-
   <div class="nav-links">
     <a href="kadrovska.html">Kadrovska</a>
-    <a href="obracun.html">Obračun plata</a>
+    <a href="obracun.html">Obračun</a>
     <a href="troskovi.html">Troškovi</a>
+    <a href="o-nama.html">O nama</a>
     <a href="kontakt.html" class="active">Kontakt</a>
   </div>
-
   <div class="nav-right">
-    <div class="nav-icons">
-      <a href="mailto:infodndsolutions@gmail.com" title="Email">
-        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 7 10-7"/></svg>
-      </a>
-      <a href="https://www.instagram.com/dndsolutions2025/" target="_blank" title="Instagram">
-        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
-      </a>
-    </div>
-    <a href="https://dnd-app-pbzr.vercel.app/app.html" target="_blank" class="btn-login">Prijava u aplikaciju</a>
-    <button class="hamburger" onclick="document.getElementById('mobileMenu').classList.toggle('open')" aria-label="Meni">
-      <span></span><span></span><span></span>
-    </button>
+    <a href="kontakt.html" class="btn btn-primary">Zatraži demo</a>
+    <a href="https://dnd-app-pbzr.vercel.app/app.html" target="_blank" class="btn btn-ghost">Prijava</a>
   </div>
+  <button class="hamburger" aria-label="Meni"><span></span><span></span><span></span></button>
 </nav>
-
-<div class="mobile-menu" id="mobileMenu">
-  <a href="kadrovska.html" onclick="document.getElementById('mobileMenu').classList.remove('open')">Kadrovska</a>
-  <a href="obracun.html" onclick="document.getElementById('mobileMenu').classList.remove('open')">Obračun plata</a>
-  <a href="troskovi.html" onclick="document.getElementById('mobileMenu').classList.remove('open')">Troškovi</a>
-  <a href="kontakt.html" onclick="document.getElementById('mobileMenu').classList.remove('open')">Kontakt</a>
-  <a href="https://dnd-app-pbzr.vercel.app/app.html" target="_blank" class="mm-login">Prijava u aplikaciju</a>
-  <div class="mm-icons">
-    <a href="mailto:infodndsolutions@gmail.com">
-      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 7 10-7"/></svg>
-      Email
-    </a>
-    <a href="https://www.instagram.com/dndsolutions2025/" target="_blank">
-      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
-      Instagram
-    </a>
-  </div>
+<div class="mobile-menu">
+  <a href="kadrovska.html">Kadrovska</a>
+  <a href="obracun.html">Obračun</a>
+  <a href="troskovi.html">Troškovi</a>
+  <a href="o-nama.html">O nama</a>
+  <a href="kontakt.html">Kontakt</a>
+  <a href="https://dnd-app-pbzr.vercel.app/app.html" target="_blank">Prijava u aplikaciju</a>
 </div>
 
-<div class="mhero">
-  <div class="glow"></div>
-  <a href="index.html" class="back-link">
-    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-    Nazad na početnu
-  </a>
-  <div class="mhero-icon">
-    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" width="28" height="28"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+<header class="section" style="padding-top:calc(var(--sp-24) + 24px);padding-bottom:var(--sp-8);">
+  <div class="wrap reveal">
+    <p class="eyebrow"><span class="dot"></span>Kontakt</p>
+    <h1 style="max-width:600px;margin-bottom:var(--sp-4);">Zakažite demo i pogledajte kako izgleda posao bez nagađanja.</h1>
+    <p class="lede">Trideset minuta razgovora, bez obaveze. Odgovaramo obično isti ili sljedeći radni dan.</p>
   </div>
-  <h1>Kontaktirajte nas</h1>
-  <p class="sub">Imate pitanje o platformi ili želite zakazati demo? Pišite nam direktno ili pošaljite upit putem forme.</p>
-</div>
+</header>
 
-<div class="contact-grid">
-  <div class="contact-info">
-    <a href="mailto:infodndsolutions@gmail.com" class="contact-card">
-      <div class="cc-icon">
-        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 7 10-7"/></svg>
+<section class="section-tight">
+  <div class="wrap grid-2">
+
+    <div class="reveal card">
+      <h3 style="margin-bottom:var(--sp-6);">Zatražite demo</h3>
+      <form action="https://formspree.io/f/xjgqazbz" method="POST">
+        <div class="field">
+          <label for="name">Ime i prezime</label>
+          <input type="text" id="name" name="name" required>
+        </div>
+        <div class="field">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" required>
+        </div>
+        <div class="field">
+          <label for="firma">Firma</label>
+          <input type="text" id="firma" name="firma">
+        </div>
+        <div class="field">
+          <label for="poruka">Šta vas trenutno najviše košta vremena?</label>
+          <textarea id="poruka" name="poruka" rows="4" placeholder="Kadrovska, obračun, troškovi — ili sve odjednom"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;">Pošalji upit</button>
+      </form>
+    </div>
+
+    <div class="reveal" style="display:flex;flex-direction:column;gap:var(--sp-8);">
+      <div>
+        <p class="label-mono" style="margin-bottom:var(--sp-3);">Direktan kontakt</p>
+        <p class="lede" style="max-width:none;margin-bottom:var(--sp-3);">Radije direktno? Pišite nam ili nas pratite:</p>
+        <div style="display:flex;flex-direction:column;gap:var(--sp-2);">
+          <a href="mailto:infodndsolutions@gmail.com" style="font-size:15px;color:var(--accent-light);">infodndsolutions@gmail.com</a>
+          <a href="https://instagram.com/dndsolutions2025" target="_blank" style="font-size:15px;color:var(--accent-light);">@dndsolutions2025</a>
+        </div>
       </div>
-      <div class="cc-label">
-        <span>Email</span>
-        <span>infodndsolutions@gmail.com</span>
+      <hr class="hr">
+      <div>
+        <p class="label-mono" style="margin-bottom:var(--sp-3);">Šta se dešava nakon što pošaljete upit</p>
+        <div style="display:flex;flex-direction:column;gap:var(--sp-3);">
+          <div style="display:flex;gap:var(--sp-3);"><span class="label-mono" style="color:var(--accent-light);">01</span><p style="font-size:14px;color:var(--text-dim);">Javljamo se sa nekoliko pitanja o vašem poslovanju.</p></div>
+          <div style="display:flex;gap:var(--sp-3);"><span class="label-mono" style="color:var(--accent-light);">02</span><p style="font-size:14px;color:var(--text-dim);">Zakazujemo kratak poziv ili sastanak.</p></div>
+          <div style="display:flex;gap:var(--sp-3);"><span class="label-mono" style="color:var(--accent-light);">03</span><p style="font-size:14px;color:var(--text-dim);">Pokazujemo module relevantne za vas, uživo.</p></div>
+        </div>
       </div>
-    </a>
-    <a href="https://www.instagram.com/dndsolutions2025/" target="_blank" class="contact-card">
-      <div class="cc-icon">
-        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
-      </div>
-      <div class="cc-label">
-        <span>Instagram</span>
-        <span>@dndsolutions2025</span>
-      </div>
-    </a>
+    </div>
+
   </div>
+</section>
 
-  <form class="contact-form" id="kontaktForm" action="https://formspree.io/f/xjgqazbz" method="POST">
-    <div class="form-title">Pošaljite upit</div>
-    <div class="form-cols">
-      <div class="form-row">
-        <label for="k_ime">Ime i prezime <span class="req">*</span></label>
-        <input type="text" id="k_ime" name="Ime_i_prezime" placeholder="Vaše ime i prezime" required>
-      </div>
-      <div class="form-row">
-        <label for="k_telefon">Telefon <span class="req">*</span></label>
-        <input type="tel" id="k_telefon" name="Telefon" placeholder="npr. 065 123 456" required>
-      </div>
+<footer>
+  <div class="wrap footer-row">
+    <div class="footer-links">
+      <a href="kadrovska.html">Kadrovska</a>
+      <a href="obracun.html">Obračun</a>
+      <a href="troskovi.html">Troškovi</a>
+      <a href="o-nama.html">O nama</a>
+      <a href="kontakt.html">Kontakt</a>
     </div>
-    <div class="form-row">
-      <label for="k_email">Email <span class="req">*</span></label>
-      <input type="email" id="k_email" name="email" placeholder="vas@email.com" required>
-    </div>
-    <div class="form-row">
-      <label for="k_poruka">Poruka <span class="req">*</span></label>
-      <textarea id="k_poruka" name="Poruka" placeholder="Opišite vaš upit..." required></textarea>
-    </div>
-    <input type="hidden" name="_subject" value="Novi upit sa dnd.ba">
-    <button type="submit" class="btn-submit" id="kontaktSubmitBtn">Pošalji upit</button>
-    <p class="form-note" id="kontaktFormNote">Vaš upit stiže direktno na infodndsolutions@gmail.com.</p>
-  </form>
-</div>
-
-<script>
-(function(){
-  const form = document.getElementById('kontaktForm');
-  const btn = document.getElementById('kontaktSubmitBtn');
-  const note = document.getElementById('kontaktFormNote');
-  form.addEventListener('submit', function(e){
-    e.preventDefault();
-    btn.disabled = true;
-    btn.textContent = 'Šaljem...';
-    fetch(form.action, {
-      method: 'POST',
-      body: new FormData(form),
-      headers: { 'Accept': 'application/json' }
-    }).then(function(response){
-      if (response.ok) {
-        form.reset();
-        form.style.display = 'none';
-        note.textContent = 'Hvala! Vaš upit je uspješno poslat, javićemo vam se uskoro.';
-        note.style.color = '#4ade80';
-        note.style.fontSize = '14px';
-        note.parentNode.appendChild(note);
-      } else {
-        throw new Error('Greška pri slanju');
-      }
-    }).catch(function(){
-      btn.disabled = false;
-      btn.textContent = 'Pošalji upit';
-      note.textContent = 'Došlo je do greške. Pokušajte ponovo ili nam pišite direktno na infodndsolutions@gmail.com.';
-      note.style.color = '#f87171';
-    });
-  });
-})();
-</script>
-
-<footer class="site-footer">
-  <span>© 2025 DND Solutions. Sva prava zadržana.</span>
-  <div class="bottom-links">
-    <a href="mailto:infodndsolutions@gmail.com">
-      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 7 10-7"/></svg>
-      infodndsolutions@gmail.com
-    </a>
-    <a href="https://www.instagram.com/dndsolutions2025/" target="_blank">
-      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
-      @dndsolutions2025
-    </a>
+    <p class="copyright">© 2026 DND Solutions</p>
   </div>
 </footer>
 
+<script>
+// Mobile menu toggle
+document.addEventListener('DOMContentLoaded', function () {
+  var hamburger = document.querySelector('.hamburger');
+  var menu = document.querySelector('.mobile-menu');
+  if (hamburger && menu) {
+    hamburger.addEventListener('click', function () {
+      menu.classList.toggle('open');
+    });
+    menu.querySelectorAll('a').forEach(function (a) {
+      a.addEventListener('click', function () { menu.classList.remove('open'); });
+    });
+  }
+
+  // Scroll reveal
+  var reveals = document.querySelectorAll('.reveal');
+  if ('IntersectionObserver' in window && reveals.length) {
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('in');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.15 });
+    reveals.forEach(function (el) { observer.observe(el); });
+  } else {
+    reveals.forEach(function (el) { el.classList.add('in'); });
+  }
+});
+
+</script>
 </body>
 </html>
