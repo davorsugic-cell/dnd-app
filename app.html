@@ -3092,8 +3092,8 @@ function renderEmployeeCard(index) {
       ${cardRow('Radno vrijeme', emp.Radno_vrijeme ? emp.Radno_vrijeme + ' č/sedmično' : '')}
       ${cardRow('Datum stupanja na rad', emp.Datum_stupanja_na_rad)}
       ${cardRow('Datum prestanka ugovora', emp.Datum_prestanka_ugovora)}
-      ${cardRow('Neto plata', emp.Neto_plata ? emp.Neto_plata + ' KM' : '')}
-      ${cardRow('Bruto plata', emp.Bruto_plata ? emp.Bruto_plata + ' KM' : '')}
+      ${cardRow('Neto plata', emp.Neto_plata ? fmtMoney(parseNum(emp.Neto_plata)) + ' KM' : '')}
+      ${cardRow('Bruto plata', emp.Bruto_plata ? fmtMoney(parseNum(emp.Bruto_plata)) + ' KM' : '')}
     </div>
     <div class="section">
       <h3>Poslodavac</h3>
@@ -3532,7 +3532,7 @@ $('printSelectedBtn').addEventListener('click', () => {
       '<tr><td>Datum stupanja</td><td>' + (emp.Datum_stupanja_na_rad || '') + '</td></tr>' +
       '<tr><td>Datum prestanka</td><td>' + (emp.Datum_prestanka_ugovora || '') + '</td></tr>' +
       '<tr><td>Radno vrijeme</td><td>' + (emp.Radno_vrijeme || '') + 'h</td></tr>' +
-      '<tr><td>Neto plata</td><td>' + (emp.Neto_plata || '') + ' KM</td></tr>' +
+      '<tr><td>Neto plata</td><td>' + (emp.Neto_plata ? fmtMoney(parseNum(emp.Neto_plata)) : '') + ' KM</td></tr>' +
       '</table></div>';
   }).join('');
   const html = '<style>' +
@@ -7450,8 +7450,8 @@ function renderObracunZaposleni() {
       <td style="padding:6px 10px;">${escapeXml(emp.Radno_mjesto || '\u2014')}</td>
       <td style="padding:6px 10px;">${escapeXml(emp.Tip_ugovora || '\u2014')}</td>
       <td style="padding:6px 10px;text-align:right;">${escapeXml(emp.Radno_vrijeme || '\u2014')}</td>
-      <td style="padding:6px 10px;text-align:right;">${escapeXml(emp.Bruto_plata || '\u2014')}</td>
-      <td style="padding:6px 10px;text-align:right;">${escapeXml(emp.Neto_plata || '\u2014')}</td>
+      <td style="padding:6px 10px;text-align:right;">${emp.Bruto_plata ? fmtMoney(parseNum(emp.Bruto_plata)) : '\u2014'}</td>
+      <td style="padding:6px 10px;text-align:right;">${emp.Neto_plata ? fmtMoney(parseNum(emp.Neto_plata)) : '\u2014'}</td>
     </tr>`).join('')}</tbody>
   </table>`;
 }
@@ -7595,6 +7595,24 @@ function updateModuleSwitcher() {
   const sbUsers = document.getElementById('sb_users');
   if (sbUsers) sbUsers.style.display = (isAdmin && dostupneStavke.includes('korisnici')) ? '' : 'none';
 }
+
+// Automatski upiši tačke u poljima za datum - korisnik samo kuca brojeve.
+document.addEventListener('input', (e) => {
+  const el = e.target;
+  if (!el || el.tagName !== 'INPUT' || el.type !== 'text') return;
+  if (el.placeholder === 'dd.mm.gggg') {
+    const digits = el.value.replace(/\D/g, '').slice(0, 8);
+    let formatted = digits;
+    if (digits.length > 4) formatted = digits.slice(0, 2) + '.' + digits.slice(2, 4) + '.' + digits.slice(4);
+    else if (digits.length > 2) formatted = digits.slice(0, 2) + '.' + digits.slice(2);
+    if (formatted !== el.value) el.value = formatted;
+  } else if (el.id === 'newPraznikDatum') {
+    const digits = el.value.replace(/\D/g, '').slice(0, 4);
+    let formatted = digits;
+    if (digits.length > 2) formatted = digits.slice(0, 2) + '.' + digits.slice(2);
+    if (formatted !== el.value) el.value = formatted;
+  }
+});
 
 updateRoleUI();
 loadUsers().then(() => tryRestoreSession());
