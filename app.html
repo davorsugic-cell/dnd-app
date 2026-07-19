@@ -3092,8 +3092,8 @@ function renderEmployeeCard(index) {
       ${cardRow('Radno vrijeme', emp.Radno_vrijeme ? emp.Radno_vrijeme + ' č/sedmično' : '')}
       ${cardRow('Datum stupanja na rad', emp.Datum_stupanja_na_rad)}
       ${cardRow('Datum prestanka ugovora', emp.Datum_prestanka_ugovora)}
-      ${cardRow('Neto plata', emp.Neto_plata ? fmtMoney(parseNum(emp.Neto_plata)) + ' KM' : '')}
-      ${cardRow('Bruto plata', emp.Bruto_plata ? fmtMoney(parseNum(emp.Bruto_plata)) + ' KM' : '')}
+      ${cardRow('Neto plata', parseNum(emp.Neto_plata) != null ? fmtMoney(parseNum(emp.Neto_plata)) + ' KM' : '')}
+      ${cardRow('Bruto plata', parseNum(emp.Bruto_plata) != null ? fmtMoney(parseNum(emp.Bruto_plata)) + ' KM' : '')}
     </div>
     <div class="section">
       <h3>Poslodavac</h3>
@@ -3532,7 +3532,7 @@ $('printSelectedBtn').addEventListener('click', () => {
       '<tr><td>Datum stupanja</td><td>' + (emp.Datum_stupanja_na_rad || '') + '</td></tr>' +
       '<tr><td>Datum prestanka</td><td>' + (emp.Datum_prestanka_ugovora || '') + '</td></tr>' +
       '<tr><td>Radno vrijeme</td><td>' + (emp.Radno_vrijeme || '') + 'h</td></tr>' +
-      '<tr><td>Neto plata</td><td>' + (emp.Neto_plata ? fmtMoney(parseNum(emp.Neto_plata)) : '') + ' KM</td></tr>' +
+      '<tr><td>Neto plata</td><td>' + (parseNum(emp.Neto_plata) != null ? fmtMoney(parseNum(emp.Neto_plata)) : '') + ' KM</td></tr>' +
       '</table></div>';
   }).join('');
   const html = '<style>' +
@@ -3895,6 +3895,7 @@ function parseNum(val) {
 }
 
 function fmtMoney(n) {
+  if (n === null || n === undefined || isNaN(n)) return '0,00';
   return n.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
@@ -7450,8 +7451,8 @@ function renderObracunZaposleni() {
       <td style="padding:6px 10px;">${escapeXml(emp.Radno_mjesto || '\u2014')}</td>
       <td style="padding:6px 10px;">${escapeXml(emp.Tip_ugovora || '\u2014')}</td>
       <td style="padding:6px 10px;text-align:right;">${escapeXml(emp.Radno_vrijeme || '\u2014')}</td>
-      <td style="padding:6px 10px;text-align:right;">${emp.Bruto_plata ? fmtMoney(parseNum(emp.Bruto_plata)) : '\u2014'}</td>
-      <td style="padding:6px 10px;text-align:right;">${emp.Neto_plata ? fmtMoney(parseNum(emp.Neto_plata)) : '\u2014'}</td>
+      <td style="padding:6px 10px;text-align:right;">${parseNum(emp.Bruto_plata) != null ? fmtMoney(parseNum(emp.Bruto_plata)) : '\u2014'}</td>
+      <td style="padding:6px 10px;text-align:right;">${parseNum(emp.Neto_plata) != null ? fmtMoney(parseNum(emp.Neto_plata)) : '\u2014'}</td>
     </tr>`).join('')}</tbody>
   </table>`;
 }
