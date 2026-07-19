@@ -1430,7 +1430,7 @@
           <label>Uloga</label>
           <select id="newUserRole">
             <option value="korisnik">Korisnik</option>
-            <option value="administrator">Administrator</option>
+            <option value="administrator" id="newUserRoleAdminOpt">Administrator</option>
           </select>
         </div>
         <div class="field">
@@ -4172,9 +4172,29 @@ $('reportExportBtn').addEventListener('click', () => {
 
 // ---------- Korisnici (upravljanje pristupom) ----------
 function renderUsersModal() {
+  if (!isAdmin) {
+    const listBody = document.getElementById('usersBody');
+    if (listBody) listBody.innerHTML = '<div class="empty">Nemaš pristup ovoj stranici.</div>';
+    return;
+  }
   const newFirmaSel = $('newUserFirma');
-  newFirmaSel.innerHTML = '<option value="">Sve firme (glavni administrator)</option>' +
-    firme.map(f => `<option value="${f.id}">${f.naziv}</option>`).join('');
+  if (isGlavniAdmin()) {
+    newFirmaSel.innerHTML = '<option value="">Sve firme (glavni administrator)</option>' +
+      firme.map(f => `<option value="${f.id}">${f.naziv}</option>`).join('');
+    newFirmaSel.disabled = false;
+    const roleAdminOpt = document.getElementById('newUserRoleAdminOpt');
+    if (roleAdminOpt) roleAdminOpt.style.display = '';
+  } else {
+    // Firma-administrator može dodavati korisnike SAMO za svoju firmu, i samo kao "Korisnik"
+    // (ko je administrator firme odlučuje isključivo glavni/super administrator).
+    const mojaFirma = firme.find(f => f.id === currentSessionUser.firma_id);
+    newFirmaSel.innerHTML = mojaFirma ? `<option value="${mojaFirma.id}">${mojaFirma.naziv}</option>` : '<option value="">(nema dodijeljenu firmu)</option>';
+    newFirmaSel.disabled = true;
+    const roleSel = document.getElementById('newUserRole');
+    if (roleSel) roleSel.value = 'korisnik';
+    const roleAdminOpt = document.getElementById('newUserRoleAdminOpt');
+    if (roleAdminOpt) roleAdminOpt.style.display = 'none';
+  }
   const newPoslovnicaSel = $('newUserPoslovnica');
   function refreshNewPoslovnica() {
     const fid = newFirmaSel.value ? parseInt(newFirmaSel.value, 10) : null;
@@ -4188,6 +4208,8 @@ function renderUsersModal() {
   const body = $('usersBody');
   body.innerHTML = '';
   users.forEach((u, i) => {
+    // Firma-scoped administrator vidi i upravlja SAMO korisnicima svoje firme.
+    if (!isGlavniAdmin() && u.firma_id !== currentSessionUser.firma_id) return;
     const row = document.createElement('div');
     row.className = 'section';
     row.style.display = 'flex';
@@ -4230,6 +4252,7 @@ function renderUsersModal() {
     refreshPoslovnicaOptions(u.firma_id, u.poslovnica_id);
 
     async function applyAccessChange() {
+      if (!isGlavniAdmin()) { toast('Samo glavni administrator može mijenjati firmu korisnika.'); return; }
       const newFirmaId = firmaSel.value ? parseInt(firmaSel.value, 10) : null;
       const newPoslovnicaId = poslovnicaSel.value ? parseInt(poslovnicaSel.value, 10) : null;
       u.firma_id = newFirmaId;
@@ -4251,8 +4274,18 @@ function renderUsersModal() {
     });
     poslovnicaSel.addEventListener('change', applyAccessChange);
 
-    row.appendChild(firmaSel);
-    row.appendChild(poslovnicaSel);
+    if (isGlavniAdmin()) {
+      // Samo glavni (super) administrator smije da mijenja kojoj firmi korisnik pripada -
+      // to je jedini način da neko dobije pristup "svim firmama", pa mora ostati pod
+      // kontrolom super administratora, ne firma-administratora.
+      row.appendChild(firmaSel);
+      row.appendChild(poslovnicaSel);
+    } else {
+      const lockedLabel = document.createElement('span');
+      lockedLabel.style.cssText = 'font-size:11px; color:var(--muted);';
+      lockedLabel.textContent = p ? `Poslovnica: ${p.naziv}` : 'Sve poslovnice';
+      row.appendChild(lockedLabel);
+    }
 
     const onlyAdmin = u.role === 'administrator' && users.filter(x => x.role === 'administrator').length <= 1;
 
@@ -4260,10 +4293,12 @@ function renderUsersModal() {
     roleBtn.type = 'button';
     roleBtn.className = 'ghost small';
     roleBtn.textContent = (u.role === 'administrator' || u.role === 'super_admin') ? 'Učini korisnikom' : 'Učini administratorom';
-    // Firma admin može dodijeliti samo administrator (ne super_admin) role
-    if (!isGlavniAdmin() && u.role === 'super_admin') roleBtn.style.display = 'none';
+    // Samo glavni (super) administrator odlučuje ko je administrator firme - firma-administrator
+    // ne smije sam sebi ili drugima dodijeliti administratorska prava.
+    if (!isGlavniAdmin()) roleBtn.style.display = 'none';
     roleBtn.disabled = onlyAdmin;
     roleBtn.addEventListener('click', async () => {
+      if (!isGlavniAdmin()) { toast('Samo glavni administrator može mijenjati ovu ulogu.'); return; }
       // Super admin ostaje super_admin, ne može biti degradiran ovdje
       if (u.role === 'super_admin') { toast('Super administrator se ne može degradirati ovdje.'); return; }
       u.role = u.role === 'administrator' ? 'korisnik' : 'administrator';
@@ -4393,11 +4428,21 @@ $('addUserBtn').addEventListener('click', async () => {
   const username = $('newUserUsername').value.trim();
   const name = $('newUserName').value.trim();
   const password = $('newUserPassword').value;
-  const role = $('newUserRole').value;
-  const firmaVal = $('newUserFirma').value;
-  const poslovnicaVal = $('newUserPoslovnica').value;
-  const firma_id = firmaVal ? parseInt(firmaVal, 10) : null;
-  const poslovnica_id = poslovnicaVal ? parseInt(poslovnicaVal, 10) : null;
+  let role = $('newUserRole').value;
+  let firma_id, poslovnica_id;
+  if (isGlavniAdmin()) {
+    const firmaVal = $('newUserFirma').value;
+    const poslovnicaVal = $('newUserPoslovnica').value;
+    firma_id = firmaVal ? parseInt(firmaVal, 10) : null;
+    poslovnica_id = poslovnicaVal ? parseInt(poslovnicaVal, 10) : null;
+  } else {
+    // Firma-administrator: bez obzira šta UI šalje, novi korisnik se uvijek vezuje za
+    // NJEGOVU firmu i nikad ne može biti "administrator" - to dodjeljuje samo super admin.
+    if (role === 'administrator' || role === 'super_admin') role = 'korisnik';
+    firma_id = currentSessionUser.firma_id;
+    const poslovnicaVal = $('newUserPoslovnica').value;
+    poslovnica_id = poslovnicaVal ? parseInt(poslovnicaVal, 10) : null;
+  }
   if (!username || !password) { toast('Korisničko ime i šifra su obavezni.'); return; }
   if (users.some(u => u.username.toLowerCase() === username.toLowerCase())) { toast('Korisničko ime već postoji.'); return; }
   users.push({ username, name, password, role, firma_id, poslovnica_id, permissions: defaultPermissions('pregled') });
@@ -5134,6 +5179,7 @@ function renderRaspored() {
 // ---------- Firme i poslovnice ----------
 function renderFirmeModal() {
   const body = $('firmeBody');
+  if (!isGlavniAdmin()) { body.innerHTML = '<div class="empty">Nemaš pristup ovoj stranici.</div>'; return; }
   body.innerHTML = '';
 
   firme.forEach((f) => {
@@ -5338,6 +5384,7 @@ function renderNewFirmaModuliCheckboxes() {
 function renderLokacijeModal() {
   const body = $('lokacijeBody');
   if (!body) return;
+  if (!isGlavniAdmin()) { body.innerHTML = '<tr><td colspan="4">Nemaš pristup ovoj stranici.</td></tr>'; return; }
   body.innerHTML = '';
   lokacije
     .slice()
@@ -7169,6 +7216,7 @@ $('expiryApplyBtn').addEventListener('click', async () => {
 // ---------- Evidencija izmjena ----------
 function renderAuditLog() {
   const body = $('auditBody');
+  if (!isAdmin) { body.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--muted);">Nemaš pristup ovoj stranici.</td></tr>'; return; }
   body.innerHTML = '';
   if (!auditLog.length) {
     body.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--muted);">Evidencija je prazna.</td></tr>';
@@ -7311,15 +7359,15 @@ const SIDEBAR_ACTIONS = {
   sb_tipUgovora:     () => { renderSingleCodeList('Tip_ugovora', 'tipUgovoraBody'); updateRoleUI(); showAppSection('tipUgovoraOverlay'); },
   sb_strucnaSprema:  () => { renderSingleCodeList('Strucna_sprema', 'strucnaSpremaBody'); updateRoleUI(); showAppSection('strucnaSpremaOverlay'); },
   sb_praznici:       () => { renderPraznieci(); updateRoleUI(); showAppSection('praznikOverlay'); },
-  sb_firme:          () => { renderFirmeModal(); renderNewFirmaModuliCheckboxes(); populateNewFirmaGrad(); showAppSection('firmeOverlay'); },
-  sb_lokacije:       () => { renderLokacijeModal(); showAppSection('lokacijeOverlay'); },
+  sb_firme:          () => { if (!isGlavniAdmin()) { toast('Nemaš pristup ovoj stranici.'); return; } renderFirmeModal(); renderNewFirmaModuliCheckboxes(); populateNewFirmaGrad(); showAppSection('firmeOverlay'); },
+  sb_lokacije:       () => { if (!isGlavniAdmin()) { toast('Nemaš pristup ovoj stranici.'); return; } renderLokacijeModal(); showAppSection('lokacijeOverlay'); },
   sb_komitenti:      () => { resetKomitentForm(); renderKomitentiModal(); showAppSection('komitentiOverlay'); },
   sb_reports:        () => { renderReports(); showAppSection('reportsOverlay'); },
   sb_expiry:         () => { expirySelection = new Set(); renderExpiryModal(); showAppSection('expiryOverlay'); },
   sb_go:             () => { renderGoModal(); showAppSection('goOverlay'); },
   sb_sihterica:      () => { populateSihFilters(); populateSihEmployeeSelect(); renderSihtericaTable(); showAppSection('sihtericaOverlay'); },
-  sb_users:          () => { renderUsersModal(); showAppSection('usersOverlay'); },
-  sb_audit:          () => { renderAuditLog(); updateRoleUI(); showAppSection('auditOverlay'); },
+  sb_users:          () => { if (!isAdmin) { toast('Nemaš pristup ovoj stranici.'); return; } renderUsersModal(); showAppSection('usersOverlay'); },
+  sb_audit:          () => { if (!isAdmin) { toast('Nemaš pristup ovoj stranici.'); return; } renderAuditLog(); updateRoleUI(); showAppSection('auditOverlay'); },
   sb_goPodesavanja:  () => { renderGoSettingsTexts(); showAppSection('goPodesavanjaOverlay'); },
   sb_ob_vrste:       () => { showAppSection('obVrsteOverlay'); },
   sb_ob_periodi:     () => { showAppSection('obPeriodiOverlay'); },
@@ -7547,6 +7595,10 @@ async function ulogujKorisnika(user) {
   document.getElementById('loginError').textContent = '';
   document.getElementById('loginPassword').value = '';
   document.getElementById('loginOverlay').classList.remove('open');
+  // Očisti bilo koju stranicu koja je eventualno ostala "otvorena" iz prethodne sesije
+  if (typeof NAV_PAGE_OVERLAYS !== 'undefined') {
+    NAV_PAGE_OVERLAYS.forEach(id => { const el = document.getElementById(id); if (el) el.classList.remove('open'); });
+  }
   document.getElementById('appWrap').style.display = '';
   try { localStorage.setItem(SESSION_KEY, JSON.stringify({ username: user.username, ts: Date.now() })); } catch(e) {}
   updateRoleUI();
