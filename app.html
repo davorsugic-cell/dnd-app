@@ -7578,14 +7578,27 @@ const _origDoLogout = doLogout;
 
 // Override attemptLogin da pozove updateSidebar
 async function attemptLogin() {
-  const u = document.getElementById('loginUsername').value.trim();
+  const u = document.getElementById('loginUsername').value.trim().toLowerCase();
   const p = document.getElementById('loginPassword').value;
   if (!u || !p) { document.getElementById('loginError').textContent = 'Unesi korisničko ime i šifru.'; return; }
-  const user = users.find(x => x.username.toLowerCase() === u.toLowerCase() && x.password === p);
-  if (!user) { document.getElementById('loginError').textContent = 'Pogrešno korisničko ime ili šifra.'; return; }
+
+  const email = u.includes('@') ? u : `${u}@dnd.ba`;
+  const { data, error } = await _supabase.auth.signInWithPassword({ email, password: p });
+
+  if (error || !data || !data.user) {
+    document.getElementById('loginError').textContent = 'Pogrešno korisničko ime ili šifra.';
+    return;
+  }
+
+  const user = users.find(x => x.username.toLowerCase() === u);
+  if (!user) {
+    document.getElementById('loginError').textContent = 'Nalog postoji u autentifikaciji, ali ne i u bazi korisnika. Kontaktiraj administratora.';
+    await _supabase.auth.signOut();
+    return;
+  }
+
   await ulogujKorisnika(user);
 }
-
 // Zajednička logika ulogovanja - koristi je i attemptLogin (ručna prijava) i
 // tryRestoreSession (automatsko "ostani prijavljen" nakon F5/refresh).
 async function ulogujKorisnika(user) {
